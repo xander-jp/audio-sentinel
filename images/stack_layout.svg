@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 700" font-family="monospace" font-size="13">
+  <defs>
+    <marker id="arrow-up" markerWidth="8" markerHeight="8" refX="8" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="#6d28d9"/>
+    </marker>
+    <linearGradient id="grad-core0" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fca5a5"/>
+      <stop offset="100%" stop-color="#fecaca"/>
+    </linearGradient>
+    <linearGradient id="grad-core0-annex" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fecaca"/>
+      <stop offset="100%" stop-color="#fee2e2"/>
+    </linearGradient>
+    <linearGradient id="grad-core1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#93c5fd"/>
+      <stop offset="100%" stop-color="#bfdbfe"/>
+    </linearGradient>
+    <linearGradient id="grad-heap" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#d9f99d"/>
+      <stop offset="100%" stop-color="#ecfccb"/>
+    </linearGradient>
+    <linearGradient id="grad-bss" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e9d5ff"/>
+      <stop offset="100%" stop-color="#f3e8ff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1160" height="700" fill="#f8fafc" rx="8"/>
+
+  <!-- Title -->
+  <text x="540" y="32" text-anchor="middle" font-size="18" font-weight="bold" fill="#1e293b">RP2350 Memory &amp; Stack Layout — Current Stable</text>
+  <text x="540" y="52" text-anchor="middle" font-size="12" fill="#64748b">memmap_bigstack.ld  ·  Core0 stack spans Main RAM top + SCRATCH_X (annexed)  ·  Core1 on SCRATCH_Y</text>
+
+  <!-- ================================================================== -->
+  <!-- Main RAM (512 KB)  0x20000000 - 0x20080000 -->
+  <!-- ================================================================== -->
+  <rect x="120" y="80" width="340" height="500" rx="8" fill="white" stroke="#7c3aed" stroke-width="2.5"/>
+  <text x="290" y="100" text-anchor="middle" font-size="15" font-weight="bold" fill="#5b21b6">Main RAM  —  512 KB</text>
+
+  <!-- Address labels (left side) -->
+  <text x="110" y="125" text-anchor="end" font-size="11" fill="#6d28d9">0x2008_0000</text>
+  <text x="110" y="250" text-anchor="end" font-size="11" fill="#dc2626">0x207C_0000</text>
+  <text x="110" y="340" text-anchor="end" font-size="11" fill="#6d28d9">__HeapLimit</text>
+  <text x="110" y="490" text-anchor="end" font-size="11" fill="#6d28d9">__end__</text>
+  <text x="110" y="565" text-anchor="end" font-size="11" fill="#6d28d9">0x2000_0000</text>
+
+  <!-- Core 0 Stack — Main RAM portion (16 KB) -->
+  <rect x="140" y="115" width="300" height="130" rx="6" fill="url(#grad-core0)" stroke="#dc2626" stroke-width="2"/>
+  <text x="290" y="155" text-anchor="middle" font-size="14" font-weight="bold" fill="#991b1b">Core 0 Stack (RAM portion)</text>
+  <text x="290" y="175" text-anchor="middle" font-size="13" fill="#b91c1c">16 KB  (0x4000)</text>
+  <text x="290" y="197" text-anchor="middle" font-size="10" fill="#7f1d1d">0x207C_0000 → 0x2008_0000</text>
+  <text x="290" y="215" text-anchor="middle" font-size="10" fill="#7f1d1d">contiguous with SCRATCH_X above ↑</text>
+
+  <!-- __StackBottom label -->
+  <line x1="440" y1="245" x2="470" y2="245" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="475" y="249" font-size="11" font-weight="bold" fill="#dc2626">__StackBottom = __HeapLimit</text>
+
+  <!-- Heap (free) -->
+  <rect x="140" y="255" width="300" height="170" rx="6" fill="url(#grad-heap)" stroke="#65a30d" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="290" y="320" text-anchor="middle" font-size="14" font-weight="bold" fill="#3f6212">Heap  (free)</text>
+  <text x="290" y="335" text-anchor="middle" font-size="11" fill="#4d7c0f">~476 KB available (shared by both cores)</text>
+  <text x="290" y="353" text-anchor="middle" font-size="10" fill="#4d7c0f">sbrk() grows up from __end__</text>
+  <text x="290" y="369" text-anchor="middle" font-size="10" fill="#4d7c0f">bounded by __HeapLimit</text>
+  <text x="290" y="387" text-anchor="middle" font-size="10" fill="#4d7c0f">Core1: mbedTLS ~16 KB rec buf, lwIP pbuf, cyw43</text>
+
+  <!-- Heap growth arrow -->
+  <line x1="455" y1="415" x2="455" y2="270" stroke="#65a30d" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-up)"/>
+  <text x="460" y="345" font-size="10" fill="#65a30d" transform="rotate(-90,460,345)">grows up</text>
+
+  <!-- .bss / .data / .text -->
+  <rect x="140" y="430" width="300" height="135" rx="6" fill="url(#grad-bss)" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="290" y="475" text-anchor="middle" font-size="13" font-weight="bold" fill="#5b21b6">.bss / .data / .text</text>
+  <text x="290" y="495" text-anchor="middle" font-size="11" fill="#6d28d9">Globals, static vars, code</text>
+  <text x="290" y="513" text-anchor="middle" font-size="10" fill="#6d28d9">IC rings (64 KB), audio ring (32 KB)</text>
+  <text x="290" y="529" text-anchor="middle" font-size="10" fill="#6d28d9">g_https_resp, pcm_pending, etc.</text>
+  <text x="290" y="545" text-anchor="middle" font-size="10" fill="#6d28d9">Loaded from Flash at boot</text>
+
+  <!-- ================================================================== -->
+  <!-- SCRATCH_X (4 KB)  0x20080000 - 0x20081000 — annexed by Core 0 -->
+  <!-- ================================================================== -->
+  <rect x="560" y="80" width="220" height="200" rx="8" fill="white" stroke="#dc2626" stroke-width="2.5"/>
+  <text x="670" y="100" text-anchor="middle" font-size="14" font-weight="bold" fill="#dc2626">SCRATCH_X</text>
+  <text x="670" y="116" text-anchor="middle" font-size="12" fill="#dc2626">4 KB — annexed by Core 0</text>
+
+  <!-- Address labels -->
+  <text x="550" y="142" text-anchor="end" font-size="11" fill="#dc2626">0x2008_1000</text>
+  <text x="550" y="262" text-anchor="end" font-size="11" fill="#dc2626">0x2008_0000</text>
+
+  <!-- Core 0 Stack (SCRATCH_X portion) -->
+  <rect x="580" y="130" width="180" height="130" rx="6" fill="url(#grad-core0-annex)" stroke="#dc2626" stroke-width="2"/>
+  <text x="670" y="165" text-anchor="middle" font-size="14" font-weight="bold" fill="#991b1b">Core 0 Stack</text>
+  <text x="670" y="185" text-anchor="middle" font-size="13" fill="#b91c1c">(SCRATCH_X portion)</text>
+  <text x="670" y="207" text-anchor="middle" font-size="11" fill="#991b1b">4 KB  (0x1000)</text>
+  <text x="670" y="225" text-anchor="middle" font-size="10" fill="#7f1d1d">contiguous with RAM top below ↓</text>
+
+  <!-- __StackTop label -->
+  <line x1="760" y1="130" x2="790" y2="130" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="795" y="134" font-size="11" font-weight="bold" fill="#dc2626">__StackTop</text>
+
+  <!-- Contiguous bracket: total 20 KB (between the two red boxes) -->
+  <line x1="510" y1="130" x2="500" y2="130" stroke="#991b1b" stroke-width="2"/>
+  <line x1="500" y1="130" x2="500" y2="245" stroke="#991b1b" stroke-width="2"/>
+  <line x1="500" y1="245" x2="510" y2="245" stroke="#991b1b" stroke-width="2"/>
+  <text x="490" y="175" text-anchor="end" font-size="12" font-weight="bold" fill="#991b1b">20 KB</text>
+  <text x="490" y="193" text-anchor="end" font-size="10" fill="#991b1b">total</text>
+  <text x="490" y="210" text-anchor="end" font-size="10" fill="#991b1b">(0x5000)</text>
+
+  <!-- ================================================================== -->
+  <!-- SCRATCH_Y (4 KB)  0x20081000 - 0x20082000 — Core 1 -->
+  <!-- ================================================================== -->
+  <rect x="560" y="320" width="220" height="250" rx="8" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+  <text x="670" y="340" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e40af">SCRATCH_Y</text>
+  <text x="670" y="356" text-anchor="middle" font-size="12" fill="#3b82f6">4 KB</text>
+
+  <!-- Address labels -->
+  <text x="550" y="380" text-anchor="end" font-size="11" fill="#1e40af">0x2008_2000</text>
+  <text x="550" y="545" text-anchor="end" font-size="11" fill="#1e40af">0x2008_1000</text>
+
+  <!-- Core 1 Stack -->
+  <rect x="580" y="370" width="180" height="180" rx="6" fill="url(#grad-core1)" stroke="#2563eb" stroke-width="2"/>
+  <text x="670" y="415" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e40af">Core 1</text>
+  <text x="670" y="435" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e40af">Stack</text>
+  <text x="670" y="460" text-anchor="middle" font-size="13" fill="#1d4ed8">4 KB  (0x1000)</text>
+  <text x="670" y="482" text-anchor="middle" font-size="10" fill="#1e3a5f">PICO_CORE1_STACK_SIZE</text>
+  <text x="670" y="499" text-anchor="middle" font-size="10" fill="#1e3a5f">cyw43_arch_poll</text>
+  <text x="670" y="514" text-anchor="middle" font-size="10" fill="#1e3a5f">tts_forward_pump</text>
+  <text x="670" y="529" text-anchor="middle" font-size="10" fill="#1e3a5f">HTTP/TLS callbacks</text>
+
+  <!-- StackOneTop / Bottom labels -->
+  <line x1="760" y1="370" x2="780" y2="370" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="785" y="374" font-size="10" font-weight="bold" fill="#2563eb">__StackOneTop</text>
+
+  <line x1="760" y1="550" x2="780" y2="550" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="785" y="554" font-size="10" font-weight="bold" fill="#2563eb">__StackOneBottom</text>
+
+  <!-- Stack growth arrow -->
+  <line x1="770" y1="535" x2="770" y2="385" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-up)"/>
+
+  <!-- ================================================================== -->
+  <!-- Why annotations -->
+  <!-- ================================================================== -->
+  <rect x="880" y="80" width="185" height="190" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="972" y="100" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">Why 20 KB?</text>
+  <line x1="895" y1="108" x2="1050" y2="108" stroke="#d97706" stroke-width="0.5"/>
+  <text x="895" y="128" font-size="10" fill="#78350f">opus_encode()</text>
+  <text x="895" y="145" font-size="10" fill="#78350f">  SILK WB 20ms VLA</text>
+  <text x="895" y="160" font-size="10" fill="#78350f">  peak: 18,912 B</text>
+  <text x="895" y="180" font-size="10" fill="#78350f">opus_decode()</text>
+  <text x="895" y="195" font-size="10" fill="#78350f">  peak: 4,864 B</text>
+  <text x="895" y="215" font-size="10" fill="#78350f">headroom: ~1.5 KB</text>
+  <text x="895" y="235" font-size="10" fill="#78350f">PICO_STACK_SIZE</text>
+  <text x="895" y="250" font-size="10" fill="#78350f">  = 0x5000 (20 KB)</text>
+
+  <rect x="880" y="300" width="185" height="155" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="972" y="320" text-anchor="middle" font-size="12" font-weight="bold" fill="#1e40af">Why 4 KB stack?</text>
+  <line x1="895" y1="328" x2="1050" y2="328" stroke="#3b82f6" stroke-width="0.5"/>
+  <text x="895" y="348" font-size="10" fill="#1e3a5f">Core1: no opus encode/</text>
+  <text x="895" y="365" font-size="10" fill="#1e3a5f">  decode — pkt forward</text>
+  <text x="895" y="382" font-size="10" fill="#1e3a5f">  only (~40-60 B)</text>
+  <text x="895" y="402" font-size="10" fill="#1e3a5f">call-chain stack fits 4 KB</text>
+  <text x="895" y="422" font-size="10" fill="#1e3a5f">cyw43/lwIP/mbedTLS bulk</text>
+  <text x="895" y="439" font-size="10" fill="#1e3a5f">  data → malloc from Heap</text>
+  <text x="895" y="449" font-size="10" fill="#1e3a5f">  (Main RAM, shared)</text>
+
+  <rect x="880" y="485" width="185" height="130" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="972" y="505" text-anchor="middle" font-size="12" font-weight="bold" fill="#166534">Linker Script</text>
+  <line x1="895" y1="513" x2="1050" y2="513" stroke="#16a34a" stroke-width="0.5"/>
+  <text x="895" y="533" font-size="10" fill="#14532d">.stack_dummy</text>
+  <text x="895" y="548" font-size="10" fill="#14532d">  &gt; RAM (not SCRATCH_Y)</text>
+  <text x="895" y="565" font-size="10" fill="#14532d">.stack1_dummy</text>
+  <text x="895" y="580" font-size="10" fill="#14532d">  &gt; SCRATCH_Y (moved)</text>
+  <text x="895" y="597" font-size="10" fill="#14532d">__HeapLimit =</text>
+  <text x="895" y="610" font-size="10" fill="#14532d">  __StackBottom</text>
+
+  <!-- Connecting arrows -->
+  <line x1="880" y1="170" x2="445" y2="180" stroke="#d97706" stroke-width="1" stroke-dasharray="4,3"/>
+  <line x1="880" y1="400" x2="765" y2="450" stroke="#3b82f6" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <!-- Core 1 malloc → Heap arrow -->
+  <line x1="580" y1="460" x2="460" y2="370" stroke="#65a30d" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="530" y="400" font-size="9" fill="#3f6212">malloc()</text>
+
+  <!-- Footer -->
+  <text x="540" y="680" text-anchor="middle" font-size="11" fill="#94a3b8">cmake.rp2350/CMakeLists.txt  ·  cmake.rp2350/memmap_bigstack.ld  ·  RP2350 Pico 2 W</text>
+</svg>

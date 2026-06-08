@@ -1,0 +1,206 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="820" viewBox="0 0 1400 820">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#222"/>
+    </marker>
+    <marker id="arrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/>
+    </marker>
+    <marker id="arrB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrO" viewBox="0 0 10 10" refX="0" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 10 0 L 0 5 L 10 10 z" fill="#2563eb"/>
+    </marker>
+    <style>
+      .title { font: 700 28px system-ui, sans-serif; fill:#111; }
+      .proto { font: 700 16px system-ui, sans-serif; fill:#555; }
+      .lbl { font: 700 17px system-ui, sans-serif; fill:#111; }
+      .sm { font: 500 13px system-ui, sans-serif; fill:#555; }
+      .sm2 { font: 500 14px system-ui, sans-serif; fill:#333; }
+      .zone-label { font: 600 16px system-ui, sans-serif; }
+      .lifeline { stroke:#888; stroke-width:1.5; stroke-dasharray:6 4; }
+      .wire { fill:none; stroke:#222; stroke-width:2.5; marker-end:url(#arr); }
+      .redwire { fill:none; stroke:#dc2626; stroke-width:2.5; marker-end:url(#arrR); }
+      .bluewire { fill:none; stroke:#2563eb; stroke-width:2.5; marker-end:url(#arrB); }
+      .bluewirel { fill:none; stroke:#2563eb; stroke-width:2.5; marker-start:url(#arrO); }
+    </style>
+  </defs>
+
+  <rect width="1400" height="820" fill="#fff"/>
+  <text x="40" y="40" class="title">CloseCast Architecture</text>
+
+  <!-- ===== Zone backgrounds ===== -->
+  <!-- Cloud (minimum) — pink -->
+  <rect x="310" y="55" width="430" height="680" rx="18" fill="#fff0f3" stroke="#f472b6" stroke-width="5" opacity=".85"/>
+  <text x="420" y="750" class="zone-label" fill="#be185d">Cloud (minimum)</text>
+
+  <!-- Publisher (maximum) — yellow -->
+  <rect x="740" y="55" width="370" height="680" rx="18" fill="#fefce8" stroke="#facc15" stroke-width="5" opacity=".85"/>
+  <text x="800" y="750" class="zone-label" fill="#a16207">Publisher (maximum)</text>
+
+  <!-- Browser — blue -->
+  <rect x="1180" y="55" width="180" height="680" rx="18" fill="#eff6ff" stroke="#60a5fa" stroke-width="5" opacity=".85"/>
+  <text x="1220" y="750" class="zone-label" fill="#2563eb">Browser</text>
+
+  <!-- ===== Protocol headers ===== -->
+  <text x="370" y="82" class="proto">https / http</text>
+  <text x="610" y="82" class="proto">WSS</text>
+  <text x="940" y="82" class="proto">http</text>
+
+  <!-- ===== Column headers (component boxes at top) ===== -->
+  <!-- Person + Device -->
+  <g transform="translate(60,90)">
+    <!-- stick person with headphones -->
+    <circle cx="30" cy="14" r="12" fill="none" stroke="#111" stroke-width="2.5"/>
+    <!-- headphone arc -->
+    <path d="M18 8 Q18 -4 30 -4 Q42 -4 42 8" fill="none" stroke="#111" stroke-width="2.5"/>
+    <line x1="30" y1="26" x2="30" y2="56" stroke="#111" stroke-width="2.5"/>
+    <line x1="30" y1="56" x2="14" y2="78" stroke="#111" stroke-width="2.5"/>
+    <line x1="30" y1="56" x2="46" y2="78" stroke="#111" stroke-width="2.5"/>
+    <line x1="30" y1="36" x2="12" y2="52" stroke="#111" stroke-width="2.5"/>
+    <line x1="30" y1="36" x2="48" y2="52" stroke="#111" stroke-width="2.5"/>
+  </g>
+
+  <!-- Microcontroller + Speaker (yellow highlight) -->
+  <g transform="translate(30,195)">
+    <rect x="0" y="0" width="120" height="130" rx="10" fill="#fef9c3" stroke="#111" stroke-width="2.5"/>
+    <!-- speaker icon -->
+    <rect x="15" y="20" width="25" height="30" rx="3" fill="#e5e7eb" stroke="#111" stroke-width="2"/>
+    <polygon points="40,15 65,5 65,65 40,55" fill="#e5e7eb" stroke="#111" stroke-width="2"/>
+    <!-- sound waves -->
+    <path d="M70 20 Q82 35 70 50" fill="none" stroke="#111" stroke-width="2"/>
+    <path d="M78 12 Q95 35 78 58" fill="none" stroke="#111" stroke-width="2"/>
+    <text x="12" y="90" class="lbl">MCU,CYW43</text>
+    <text x="12" y="110" class="sm">+ Speaker</text>
+  </g>
+
+  <!-- WiFi -->
+  <g transform="translate(195,100)">
+    <rect x="0" y="0" width="80" height="70" rx="10" fill="#fff" stroke="#111" stroke-width="2"/>
+    <text x="16" y="28" class="lbl">WiFi</text>
+    <path d="M40 78 Q62 52 84 78" fill="none" stroke="#111" stroke-width="2.5" transform="translate(-24,-28)"/>
+    <path d="M40 58 Q70 32 100 58" fill="none" stroke="#111" stroke-width="2.5" transform="translate(-30,-18)"/>
+    <circle cx="40" cy="55" r="4" fill="#111"/>
+  </g>
+
+  <!-- CF -->
+  <g transform="translate(340,100)">
+    <rect x="0" y="0" width="80" height="50" rx="8" fill="#fff" stroke="#111" stroke-width="2"/>
+    <text x="22" y="32" class="lbl">CF</text>
+  </g>
+
+  <!-- ECS -->
+  <g transform="translate(460,100)">
+    <rect x="0" y="0" width="80" height="50" rx="8" fill="#fff" stroke="#111" stroke-width="2"/>
+    <text x="18" y="32" class="lbl">ECS</text>
+  </g>
+
+  <!-- Tunnel A -->
+  <g transform="translate(580,100)">
+    <rect x="0" y="0" width="80" height="50" rx="8" fill="#fff" stroke="#111" stroke-width="2"/>
+    <text x="6" y="22" class="lbl">Tunnel</text>
+    <text x="30" y="42" class="sm">A</text>
+  </g>
+
+  <!-- Tunnel B -->
+  <g transform="translate(680,100)">
+    <rect x="0" y="0" width="80" height="50" rx="8" fill="#fff" stroke="#111" stroke-width="2"/>
+    <text x="6" y="22" class="lbl">Tunnel</text>
+    <text x="30" y="42" class="sm">B</text>
+  </g>
+
+  <!-- RMT B-->
+  <g transform="translate(800,100)">
+    <rect x="0" y="0" width="80" height="50" rx="8" fill="#fff" stroke="#111" stroke-width="2"/>
+    <text x="14" y="32" class="lbl">RMT B</text>
+  </g>
+
+  <!-- Browser box -->
+  <g transform="translate(1200,100)">
+    <rect x="0" y="0" width="130" height="90" rx="10" fill="#fff" stroke="#111" stroke-width="2.5"/>
+    <rect x="10" y="10" width="110" height="30" rx="5" fill="#f3f4f6" stroke="#111" stroke-width="1.5"/>
+    <text x="42" y="31" class="lbl">ctrl</text>
+    <rect x="10" y="50" width="110" height="30" rx="5" fill="#f3f4f6" stroke="#111" stroke-width="1.5"/>
+    <text x="30" y="71" class="lbl">AMIX</text>
+  </g>
+
+  <!-- ===== Lifelines (vertical dashed lines) ===== -->
+  <line x1="90" y1="325" x2="90" y2="680" class="lifeline"/>
+  <line x1="235" y1="170" x2="235" y2="680" class="lifeline"/>
+  <line x1="380" y1="150" x2="380" y2="680" class="lifeline"/>
+  <line x1="500" y1="150" x2="500" y2="680" class="lifeline"/>
+  <line x1="620" y1="150" x2="620" y2="680" class="lifeline"/>
+  <line x1="720" y1="150" x2="720" y2="680" class="lifeline"/>
+  <line x1="840" y1="150" x2="840" y2="680" class="lifeline"/>
+  <line x1="1265" y1="190" x2="1265" y2="680" class="lifeline"/>
+
+  <!-- ===== Message arrows ===== -->
+
+  <!-- Device → WiFi → CF → ECS (connection setup, black) -->
+  <line x1="95" y1="360" x2="228" y2="360" class="wire"/>
+  <line x1="242" y1="380" x2="373" y2="380" class="wire"/>
+  <line x1="387" y1="400" x2="493" y2="400" class="wire"/>
+
+  <!-- ECS → Tunnel fanout (red circle / loop at ECS-Tunnel boundary) -->
+  <ellipse cx="540" cy="420" rx="33" ry="60" fill="none" stroke="#dc2626" stroke-width="2.5"/>
+  <path d="M548 420 L540 412 M548 420 L556 412" stroke="#dc2626" stroke-width="2"/>
+  <path d="M548 460 L540 452 M548 460 L556 452" stroke="#dc2626" stroke-width="2"/>
+  <text x="530" y="490" class="sm" fill="#dc2626">regist</text>
+
+  <!-- Tunnel → RMT (red, rightward — upstream control) -->
+  <line x1="527" y1="500" x2="713" y2="500" class="redwire"/>
+  <line x1="713" y1="520" x2="823" y2="520" class="redwire"/>
+  <text x="680" y="482" class="sm" fill="#dc2626">upstream</text>
+
+  <!-- RMT → Tunnel (blue, leftward — audio/Opus downstream) -->
+  <line x1="833" y1="550" x2="727" y2="550" class="bluewire"/>
+  <text x="695" y="590" class="sm" fill="#2563eb">Opus audio</text>
+
+  <!-- Tunnel → ECS → CF → Device (blue, audio downstream) -->
+  <line x1="693" y1="580" x2="507" y2="580" class="bluewire"/>
+  <line x1="493" y1="610" x2="387" y2="610" class="bluewire"/>
+  <line x1="373" y1="630" x2="242" y2="630" class="bluewire"/>
+  <line x1="228" y1="640" x2="97" y2="640" class="bluewire"/>
+  <text x="100" y="660" class="sm2" fill="#2563eb">audio / Opus</text>
+
+  <!-- Browser → RMT (control curve, black) -->
+  <path d="M1200 160 C1140 160 1100 250 840 250" fill="none" stroke="#111" stroke-width="2.5" marker-end="url(#arr)"/>
+  <text x="1020" y="210" class="sm">http ctrl</text>
+
+  <!-- Browser → ECS/Tunnel (AMIX input curve) -->
+  <path d="M1200 190 C1140 160 1100 250 840 290" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-dasharray="8 5" marker-end="url(#arrR)"/>
+  <text x="920" y="300" class="sm" fill="#dc2626">mixer cmd</text>
+
+  <!-- RMT ↔ RMT-RNG (service registration) -->
+  <line x1="728" y1="320" x2="827" y2="320" class="wire" stroke-dasharray="8 5"/>
+  <line x1="827" y1="340" x2="728" y2="340" class="wire" stroke-dasharray="8 5"/>
+  <line x1="727" y1="360" x2="528" y2="360" class="wire" stroke-dasharray="8 5"/>
+  <text x="860" y="342" class="sm">register</text>
+
+  <!-- ===== Service stack under RMT-RNG ===== -->
+  <g transform="translate(850,530)">
+    <rect x="0" y="0" width="130" height="130" rx="10" fill="#fff" stroke="#111" stroke-width="2"/>
+    <rect x="10" y="10" width="150" height="28" rx="5" fill="#f3f4f6" stroke="#111" stroke-width="1.5"/>
+    <text x="30" y="30" class="sm2">radio</text>
+    <rect x="10" y="46" width="150" height="28" rx="5" fill="#f3f4f6" stroke="#111" stroke-width="1.5"/>
+    <text x="38" y="66" class="sm2">MIC</text>
+    <rect x="10" y="82" width="150" height="28" rx="5" fill="#f3f4f6" stroke="#111" stroke-width="1.5"/>
+    <text x="30" y="102" class="sm2">music</text>
+    <text x="14" y="126" class="sm">custom services</text>
+  </g>
+  <text x="880" y="525" class="sm">seamless register</text>
+
+  <!-- ===== iOS app + BLE provisioning ===== -->
+  <g transform="translate(30,690)">
+    <rect x="0" y="0" width="130" height="50" rx="8" fill="#fff" stroke="#111" stroke-width="2"/>
+    <text x="10" y="22" class="lbl">iOS app</text>
+    <text x="10" y="42" class="sm">provisioning</text>
+  </g>
+  <g transform="translate(165,705)">
+    <circle cx="0" cy="10" r="16" fill="none" stroke="#dc2626" stroke-width="2.5"/>
+    <text x="-8" y="14" font-size="12" font-weight="700" fill="#dc2626">B</text>
+    <text x="-15" y="38" class="sm" fill="#dc2626">BLE</text>
+  </g>
+  <path d="M180 705 C190 600 140 400 95 340" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrR)"/>
+</svg>

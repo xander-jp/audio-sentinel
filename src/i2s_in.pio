@@ -1,0 +1,79 @@
+; I2S RX (INMP441, Philips standard, 32 BCK per channel).
+;
+; Pin assignments are flexible (BCK / LRCK / SD don't have to be consecutive):
+;   sideset 1 bit → BCK   (GP16 for this board)
+;   set     1 bit → LRCK  (GP20 for this board)
+;   in_base       → SD    (GP21 for this board)
+;
+; Frame layout (136 cycles → 16 kHz @ ~2.176 MHz PIO clock):
+;   Left  channel: 68 cycles (LRCK=0, 32 BCK pairs + 4 setup)
+;   Right channel: 68 cycles (LRCK=1, 32 BCK pairs + 4 setup)
+;
+; INMP441 outputs DOUT on the BCK rising edge. The master samples on the
+; BCK falling edge (data is stable in the middle of the BCK-low half-cycle).
+; Philips I2S delays the MSB by one BCK past the WS transition, so we burn a
+; full dummy BCK period (one rising + one falling edge, NOT sampled) before
+; clocking in the 32 real bits. Earlier this delay was only half a period,
+; which left the not-yet-valid first bit stuck at '1' (and=8000 in the PCM
+; diagnostic) and shifted every sample one bit off.
+;
+; Autopush at 32 → one 32-bit word per channel into the RX FIFO. Reader
+; uses bits [31:16] as a 16-bit MSB-first sample (the INMP441 outputs 24
+; valid bits then padding zeros, so the top 16 bits are the signed sample).
+; When INMP441 L/R is tied to GND, the LEFT word holds the sample and the
+; RIGHT word is near-zero — the C reader discards the right word.
+
+.program i2s_in
+.side_set 1
+
+public entry_point:
+.wrap_target
+    ; ---- LEFT channel (LRCK=0): 68 cycles ----
+    set pins, 0     side 0     ; cycle 0: LRCK=0 (WS transition), BCK=0
+    nop             side 1     ; cycle 1: BCK rising  — dummy (I2S 1-BCK delay)
+    nop             side 0     ; cycle 2: BCK falling — dummy, do NOT sample
+    set x, 31       side 1     ; cycle 3: BCK rising, x=31 → 32 iterations
+left_loop:
+    in pins, 1      side 0     ; BCK=0, sample SD (slave data stable mid-low)
+    jmp x-- left_loop side 1   ; BCK=1, slave drives next bit
+    ; 4 setup + 64 loop = 68 cycles
+
+    ; ---- RIGHT channel (LRCK=1): 68 cycles ----
+    set pins, 1     side 0
+    nop             side 1
+    nop             side 0
+    set x, 31       side 1
+right_loop:
+    in pins, 1      side 0
+    jmp x-- right_loop side 1
+.wrap
+
+% c-sdk {
+static inline void i2s_in_program_init(PIO pio, uint sm, uint offset,
+                                       uint bck_pin, uint lrck_pin,
+                                       uint data_pin) {
+    // Output pins (BCK, LRCK) — driven by PIO.
+    pio_gpio_init(pio, bck_pin);
+    pio_gpio_init(pio, lrck_pin);
+    // Data pin is INPUT — INMP441 drives SD.
+    pio_gpio_init(pio, data_pin);
+    pio_sm_set_consecutive_pindirs(pio, sm, data_pin, 1, /*is_out=*/false);
+
+    pio_sm_config c = i2s_in_program_get_default_config(offset);
+    sm_config_set_sideset_pins(&c, bck_pin);
+    sm_config_set_set_pins(&c, lrck_pin, 1);
+    sm_config_set_in_pins(&c, data_pin);
+    // MSB-first: shift left so the first sampled bit (MSB) ends up at ISR[31].
+    sm_config_set_in_shift(&c, /*shift_right=*/false,
+                                /*autopush=*/true,
+                                /*push_threshold=*/32);
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
+
+    pio_sm_init(pio, sm, offset, &c);
+
+    // Set BCK and LRCK as outputs (driven by PIO sideset / set), SD as input.
+    pio_sm_set_consecutive_pindirs(pio, sm, bck_pin,  1, /*is_out=*/true);
+    pio_sm_set_consecutive_pindirs(pio, sm, lrck_pin, 1, /*is_out=*/true);
+    pio_sm_set_consecutive_pindirs(pio, sm, data_pin, 1, /*is_out=*/false);
+}
+%}

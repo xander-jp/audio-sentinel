@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 300" font-family="'Helvetica Neue', Arial, sans-serif">
+  <defs>
+    <filter id="shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="1" dy="2" stdDeviation="3" flood-opacity="0.12"/>
+    </filter>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="780" height="300" rx="12" fill="url(#bgGrad)"/>
+
+  <!-- Title -->
+  <text x="390" y="30" text-anchor="middle" fill="#1e293b" font-size="14" font-weight="700">双方向インターコム — 検知 → 通知 → トークバック</text>
+
+  <!-- === 上り (row 1) === -->
+  <!-- NDP120 match -->
+  <rect x="30" y="55" width="130" height="40" rx="10" fill="#7c3aed" filter="url(#shadow)"/>
+  <text x="95" y="80" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">NDP120 match</text>
+
+  <line x1="160" y1="75" x2="195" y2="75" stroke="#475569" stroke-width="2"/>
+  <polygon points="192,70 205,75 192,80" fill="#475569"/>
+
+  <!-- Opus 上り -->
+  <rect x="210" y="55" width="120" height="40" rx="10" fill="#059669" filter="url(#shadow)"/>
+  <text x="270" y="80" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Opus 上り</text>
+
+  <line x1="330" y1="75" x2="365" y2="75" stroke="#475569" stroke-width="2"/>
+  <polygon points="362,70 375,75 362,80" fill="#475569"/>
+
+  <!-- Cloud -->
+  <rect x="380" y="55" width="120" height="40" rx="10" fill="#2563eb" filter="url(#shadow)"/>
+  <text x="440" y="80" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Cloud</text>
+
+  <line x1="500" y1="75" x2="535" y2="75" stroke="#475569" stroke-width="2"/>
+  <polygon points="532,70 545,75 532,80" fill="#475569"/>
+
+  <!-- スマホ通知 -->
+  <rect x="550" y="55" width="200" height="40" rx="10" fill="#16a34a" filter="url(#shadow)"/>
+  <text x="650" y="80" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">スマホ通知</text>
+
+  <!-- 上りラベル -->
+  <rect x="30" y="42" width="50" height="16" rx="4" fill="#dcfce7"/>
+  <text x="55" y="54" text-anchor="middle" fill="#15803d" font-size="9" font-weight="600">上り</text>
+
+  <!-- === ユーザー発話 (中央) === -->
+  <line x1="650" y1="95" x2="650" y2="135" stroke="#d97706" stroke-width="2"/>
+  <polygon points="644,132 650,145 656,132" fill="#d97706"/>
+  <rect x="550" y="115" width="200" height="22" rx="6" fill="#fef3c7"/>
+  <text x="650" y="130" text-anchor="middle" fill="#92400e" font-size="10" font-weight="600">ユーザーが「何があった？」と発話</text>
+
+  <!-- === 下り (row 2) === -->
+  <!-- スマホ -->
+  <rect x="550" y="150" width="200" height="40" rx="10" fill="#16a34a" filter="url(#shadow)"/>
+  <text x="650" y="175" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">スマホ (音声送信)</text>
+
+  <line x1="550" y1="170" x2="505" y2="170" stroke="#475569" stroke-width="2"/>
+  <polygon points="508,165 495,170 508,175" fill="#475569"/>
+
+  <!-- Cloud -->
+  <rect x="380" y="150" width="120" height="40" rx="10" fill="#2563eb" filter="url(#shadow)"/>
+  <text x="440" y="175" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Cloud relay</text>
+
+  <line x1="380" y1="170" x2="345" y2="170" stroke="#475569" stroke-width="2"/>
+  <polygon points="348,165 335,170 348,175" fill="#475569"/>
+
+  <!-- Opus 下り -->
+  <rect x="210" y="150" width="120" height="40" rx="10" fill="#d97706" filter="url(#shadow)"/>
+  <text x="270" y="175" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Opus 下り</text>
+
+  <line x1="210" y1="170" x2="175" y2="170" stroke="#475569" stroke-width="2"/>
+  <polygon points="178,165 165,170 178,175" fill="#475569"/>
+
+  <!-- RP2350 + Speaker -->
+  <rect x="30" y="150" width="130" height="40" rx="10" fill="#0891b2" filter="url(#shadow)"/>
+  <text x="95" y="170" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">RP2350 → Speaker</text>
+  <text x="95" y="183" text-anchor="middle" fill="#cffafe" font-size="8">PCM5101A DAC 再生</text>
+
+  <!-- 下りラベル -->
+  <rect x="30" y="137" width="50" height="16" rx="4" fill="#fef3c7"/>
+  <text x="55" y="149" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">下り</text>
+
+  <!-- 結果ボックス -->
+  <rect x="130" y="230" width="520" height="45" rx="10" fill="#f8fafc" filter="url(#shadow)"/>
+  <rect x="130" y="230" width="520" height="45" rx="10" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="390" y="252" text-anchor="middle" fill="#1e293b" font-size="11" font-weight="600">追加ハードウェア不要 — I2S DAC + DMA ring 32 KB の下りパイプラインが構成に含まれている</text>
+  <text x="390" y="268" text-anchor="middle" fill="#64748b" font-size="10">片方向の「検知して通知するだけ」→ 双方向の「現場と対話できる」端末</text>
+</svg>

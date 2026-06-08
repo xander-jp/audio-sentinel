@@ -1,0 +1,40 @@
+// GATT database for the Ito-Denwa BLE WiFi-provisioning service.
+//
+// Service:                 A2D40000-2D11-1AE1-2D80-1A30CCAE0001
+//   SSID      (write):     A2D40001-...
+//   Password  (write):     A2D40002-...
+//   Commit    (write):     A2D40003-...  (write 0x01 to apply & reboot)
+//   Status    (read/notify):A2D40004-... (0=idle 1=ssid 2=pass 3=devid 4=saved 5=opus 0xFF=err)
+//   DeviceID  (write):     A2D40005-...  (UTF-8, up to 64 bytes)
+//   OpusEnab  (write):     A2D40006-...  (1 byte: 0=PCM, non-zero=Opus codec)
+
+PRIMARY_SERVICE, GAP_SERVICE
+CHARACTERISTIC, GAP_DEVICE_NAME, READ, "Ito-Denwa Prov"
+
+PRIMARY_SERVICE, GATT_SERVICE
+CHARACTERISTIC, GATT_DATABASE_HASH, READ,
+
+PRIMARY_SERVICE, A2D40000-2D11-1AE1-2D80-1A30CCAE0001
+
+// All input characteristics expose BOTH Write Request (.withResponse) and
+// Write Command (.withoutResponse) properties so iOS can pick either. With
+// only WRITE set, BTstack rejects Write Commands and the att_write_callback
+// never fires — symptom: silent no-op when iOS uses .withoutResponse.
+
+// SSID
+CHARACTERISTIC, A2D40001-2D11-1AE1-2D80-1A30CCAE0001, WRITE | WRITE_WITHOUT_RESPONSE | DYNAMIC,
+
+// Password
+CHARACTERISTIC, A2D40002-2D11-1AE1-2D80-1A30CCAE0001, WRITE | WRITE_WITHOUT_RESPONSE | DYNAMIC,
+
+// Commit
+CHARACTERISTIC, A2D40003-2D11-1AE1-2D80-1A30CCAE0001, WRITE | WRITE_WITHOUT_RESPONSE | DYNAMIC,
+
+// Status (read + notify)
+CHARACTERISTIC, A2D40004-2D11-1AE1-2D80-1A30CCAE0001, READ | NOTIFY | DYNAMIC,
+
+// Device ID
+CHARACTERISTIC, A2D40005-2D11-1AE1-2D80-1A30CCAE0001, WRITE | WRITE_WITHOUT_RESPONSE | DYNAMIC,
+
+// Opus enable (1 byte: 0=PCM, non-zero=Opus). Default ON if phone never writes.
+CHARACTERISTIC, A2D40006-2D11-1AE1-2D80-1A30CCAE0001, WRITE | WRITE_WITHOUT_RESPONSE | DYNAMIC,

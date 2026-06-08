@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 520" font-family="'Helvetica Neue', Arial, sans-serif">
+  <defs>
+    <filter id="shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="1" dy="2" stdDeviation="3" flood-opacity="0.12"/>
+    </filter>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="780" height="520" rx="12" fill="url(#bgGrad)"/>
+
+  <!-- Title -->
+  <text x="390" y="30" text-anchor="middle" fill="#1e293b" font-size="14" font-weight="700">Core 0 NDP120 Integration — From Dormant Wake to Cloud POST</text>
+
+  <!-- Step 1: NDP120 INT -->
+  <rect x="220" y="50" width="340" height="45" rx="12" fill="#7c3aed" filter="url(#shadow)"/>
+  <text x="390" y="70" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">NDP120 INT → GPIO IRQ → RP2350 dormant wake</text>
+  <text x="390" y="86" text-anchor="middle" fill="#e9d5ff" font-size="9">Dedicated AI silicon detects match, instant wake via interrupt</text>
+
+  <!-- Arrow -->
+  <line x1="390" y1="95" x2="390" y2="120" stroke="#475569" stroke-width="2"/>
+  <polygon points="384,117 390,130 396,117" fill="#475569"/>
+
+  <!-- Step 2: SPI get match + extract -->
+  <rect x="220" y="135" width="340" height="45" rx="12" fill="#0284c7" filter="url(#shadow)"/>
+  <text x="390" y="155" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">get_match_summary() + extract_data()</text>
+  <text x="390" y="171" text-anchor="middle" fill="#bae6fd" font-size="9">SPI: retrieve event type + confidence + PCM</text>
+
+  <!-- Arrow -->
+  <line x1="390" y1="180" x2="390" y2="205" stroke="#475569" stroke-width="2"/>
+  <polygon points="384,202 390,215 396,202" fill="#475569"/>
+
+  <!-- Step 3: Lightweight filter -->
+  <rect x="220" y="220" width="340" height="45" rx="12" fill="#0891b2" filter="url(#shadow)"/>
+  <text x="390" y="240" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Lightweight second filter</text>
+  <text x="390" y="256" text-anchor="middle" fill="#cffafe" font-size="9">VAD → duration → energy/ZCR → Mahalanobis</text>
+
+  <!-- Branch -->
+  <line x1="390" y1="265" x2="390" y2="290" stroke="#475569" stroke-width="2"/>
+
+  <!-- NG branch (right) -->
+  <line x1="390" y1="290" x2="580" y2="290" stroke="#dc2626" stroke-width="2.5"/>
+  <line x1="580" y1="290" x2="580" y2="320" stroke="#dc2626" stroke-width="2.5"/>
+  <polygon points="574,317 580,330 586,317" fill="#dc2626"/>
+  <rect x="555" y="278" width="30" height="18" rx="4" fill="#fee2e2"/>
+  <text x="570" y="290" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="700">NG</text>
+
+  <rect x="490" y="335" width="180" height="40" rx="10" fill="#dc2626" filter="url(#shadow)"/>
+  <text x="580" y="355" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Back to dormant</text>
+  <text x="580" y="369" text-anchor="middle" fill="#fecaca" font-size="8">No Wi-Fi wake</text>
+
+  <!-- OK branch (left/center down) -->
+  <line x1="390" y1="290" x2="250" y2="290" stroke="#16a34a" stroke-width="2.5"/>
+  <line x1="250" y1="290" x2="250" y2="320" stroke="#16a34a" stroke-width="2.5"/>
+  <polygon points="244,317 250,330 256,317" fill="#16a34a"/>
+  <rect x="215" y="278" width="30" height="18" rx="4" fill="#dcfce7"/>
+  <text x="230" y="290" text-anchor="middle" fill="#15803d" font-size="10" font-weight="700">OK</text>
+
+  <!-- Step 4: mxfs + Wi-Fi parallel -->
+  <rect x="100" y="335" width="300" height="45" rx="12" fill="#059669" filter="url(#shadow)"/>
+  <text x="250" y="355" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">mxfs append (Flash) + Wi-Fi/TLS connect</text>
+  <text x="250" y="371" text-anchor="middle" fill="#d1fae5" font-size="9">Buffer PCM to Flash while connecting in parallel</text>
+
+  <!-- Arrow -->
+  <line x1="250" y1="380" x2="250" y2="405" stroke="#475569" stroke-width="2"/>
+  <polygon points="244,402 250,415 256,402" fill="#475569"/>
+
+  <!-- Step 5: Opus + SPSC + Core 1 -->
+  <rect x="100" y="420" width="300" height="45" rx="12" fill="#d97706" filter="url(#shadow)"/>
+  <text x="250" y="440" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Opus encode → SPSC ring → Core 1</text>
+  <text x="250" y="456" text-anchor="middle" fill="#fef3c7" font-size="9">Read from Flash after TLS established, then send</text>
+
+  <!-- Arrow to cloud label -->
+  <line x1="400" y1="442" x2="470" y2="442" stroke="#3b82f6" stroke-width="2"/>
+  <polygon points="467,437 480,442 467,447" fill="#3b82f6"/>
+  <rect x="485" y="428" width="120" height="30" rx="8" fill="#2563eb" filter="url(#shadow)"/>
+  <text x="545" y="448" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">→ Cloud POST</text>
+</svg>

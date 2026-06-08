@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 280" font-family="'Helvetica Neue', Arial, sans-serif">
+  <defs>
+    <filter id="shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="1" dy="2" stdDeviation="3" flood-opacity="0.12"/>
+    </filter>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="780" height="280" rx="12" fill="url(#bgGrad)"/>
+
+  <!-- Title -->
+  <text x="390" y="28" text-anchor="middle" fill="#1e293b" font-size="13" font-weight="700">Battery Design — Eneloop AA × 2</text>
+
+  <!-- Eneloop -->
+  <rect x="30" y="55" width="130" height="55" rx="10" fill="#6366f1" filter="url(#shadow)"/>
+  <text x="95" y="78" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">Eneloop AA × 2</text>
+  <text x="95" y="96" text-anchor="middle" fill="#e0e7ff" font-size="9">2.4V, 1900 mAh</text>
+
+  <line x1="160" y1="82" x2="195" y2="82" stroke="#475569" stroke-width="2"/>
+  <polygon points="192,77 205,82 192,87" fill="#475569"/>
+
+  <!-- Boost converter -->
+  <rect x="210" y="55" width="160" height="55" rx="10" fill="#d97706" filter="url(#shadow)"/>
+  <text x="290" y="78" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">1A low-Iq Boost</text>
+  <text x="290" y="96" text-anchor="middle" fill="#fef3c7" font-size="9">→ 3.3V, 300 mA sustained</text>
+
+  <line x1="370" y1="82" x2="405" y2="82" stroke="#475569" stroke-width="2"/>
+  <polygon points="402,77 415,82 402,87" fill="#475569"/>
+
+  <!-- Caps -->
+  <rect x="420" y="45" width="140" height="75" rx="10" fill="#0891b2" filter="url(#shadow)"/>
+  <text x="490" y="68" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">Decoupling</text>
+  <text x="490" y="85" text-anchor="middle" fill="#cffafe" font-size="9">MLCC 10–47 µF multiple</text>
+  <text x="490" y="100" text-anchor="middle" fill="#cffafe" font-size="9">+ low-ESR 470–1000 µF</text>
+  <text x="490" y="115" text-anchor="middle" fill="#67e8f9" font-size="8">Transient response only</text>
+
+  <!-- Arrow to loads -->
+  <line x1="560" y1="82" x2="595" y2="82" stroke="#475569" stroke-width="2"/>
+
+  <!-- Branch -->
+  <line x1="595" y1="82" x2="595" y2="55" stroke="#475569" stroke-width="1.5"/>
+  <line x1="595" y1="82" x2="595" y2="110" stroke="#475569" stroke-width="1.5"/>
+  <line x1="595" y1="82" x2="595" y2="175" stroke="#475569" stroke-width="1.5"/>
+
+  <!-- NDP120 -->
+  <line x1="595" y1="55" x2="620" y2="55" stroke="#475569" stroke-width="1.5"/>
+  <polygon points="617,50 630,55 617,60" fill="#475569"/>
+  <rect x="635" y="38" width="130" height="35" rx="8" fill="#7c3aed" filter="url(#shadow)"/>
+  <text x="700" y="55" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">NDP120</text>
+  <text x="700" y="68" text-anchor="middle" fill="#e9d5ff" font-size="8">always-on ~hundreds µA</text>
+
+  <!-- RP2350 -->
+  <line x1="595" y1="110" x2="620" y2="110" stroke="#475569" stroke-width="1.5"/>
+  <polygon points="617,105 630,110 617,115" fill="#475569"/>
+  <rect x="635" y="93" width="130" height="35" rx="8" fill="#0284c7" filter="url(#shadow)"/>
+  <text x="700" y="110" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">RP2350</text>
+  <text x="700" y="123" text-anchor="middle" fill="#bae6fd" font-size="8">dormant ~tens µA / burst</text>
+
+  <!-- CYW43 -->
+  <line x1="595" y1="175" x2="620" y2="175" stroke="#475569" stroke-width="1.5"/>
+  <polygon points="617,170 630,175 617,180" fill="#475569"/>
+  <rect x="635" y="155" width="130" height="45" rx="8" fill="#dc2626" filter="url(#shadow)"/>
+  <text x="700" y="174" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">CYW43</text>
+  <text x="700" y="189" text-anchor="middle" fill="#fecaca" font-size="8">Event-only ~300 mA</text>
+  <text x="700" y="196" text-anchor="middle" fill="#fee2e2" font-size="7">Boost sustains TX burst</text>
+
+  <!-- Summary -->
+  <rect x="30" y="225" width="730" height="40" rx="8" fill="#f8fafc" filter="url(#shadow)"/>
+  <rect x="30" y="225" width="730" height="40" rx="8" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="390" y="245" text-anchor="middle" fill="#1e293b" font-size="10" font-weight="600">Standby ~1 mA → months on Eneloop AA × 2 ∙ No supercap needed ∙ Boost sustains TX burst</text>
+  <text x="390" y="259" text-anchor="middle" fill="#64748b" font-size="9">Deployable where USB-C is unavailable — outdoor sheds, garages, vehicles</text>
+</svg>

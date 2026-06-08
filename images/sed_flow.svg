@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 480" font-family="'Helvetica Neue', Arial, sans-serif">
+  <defs>
+    <filter id="shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="1" dy="2" stdDeviation="3" flood-opacity="0.12"/>
+    </filter>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+    <linearGradient id="d1Grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="rpGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+    <linearGradient id="micGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#b91c1c"/>
+    </linearGradient>
+    <linearGradient id="core0Grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="core1Grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="cloudGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="phoneGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#16a34a"/>
+      <stop offset="100%" stop-color="#15803d"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="820" height="480" rx="12" fill="url(#bgGrad)"/>
+
+  <!-- Title -->
+  <text x="410" y="32" text-anchor="middle" fill="#1e293b" font-size="15" font-weight="700" letter-spacing="1">動作フロー — イベント検知から通知まで</text>
+
+  <!-- ========== LEFT COLUMN: D1 → RP2350 → INMP441 ========== -->
+
+  <!-- Step 1: D1 Detection -->
+  <rect x="40" y="55" width="280" height="55" rx="14" fill="url(#d1Grad)" filter="url(#shadow)"/>
+  <text x="180" y="78" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">D1 で異常音検知</text>
+  <text x="180" y="98" text-anchor="middle" fill="#e9d5ff" font-size="10">内蔵 MIC + エッジ AI が常時リスニング</text>
+
+  <!-- Arrow D1 → RP2350 -->
+  <line x1="180" y1="110" x2="180" y2="140" stroke="#b45309" stroke-width="2.5"/>
+  <polygon points="174,137 180,150 186,137" fill="#b45309"/>
+  <!-- UART label -->
+  <rect x="230" y="118" width="170" height="20" rx="6" fill="#fef3c7"/>
+  <rect x="230" y="118" width="170" height="20" rx="6" fill="none" stroke="#d97706" stroke-width="0.5"/>
+  <text x="315" y="132" text-anchor="middle" fill="#92400e" font-size="10" font-weight="600">UART: "glassbreak, 0.92"</text>
+
+  <!-- Step 2: RP2350 wakeup -->
+  <rect x="40" y="155" width="280" height="55" rx="14" fill="url(#rpGrad)" filter="url(#shadow)"/>
+  <text x="180" y="178" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">RP2350 を起こす / イベント通知</text>
+  <text x="180" y="198" text-anchor="middle" fill="#e0f2fe" font-size="10">GPIO 割り込み or UART RX 受信</text>
+
+  <!-- Arrow RP2350 → INMP441 -->
+  <line x1="180" y1="210" x2="180" y2="240" stroke="#ef4444" stroke-width="2.5"/>
+  <polygon points="174,237 180,250 186,237" fill="#ef4444"/>
+
+  <!-- Step 3: INMP441 capture -->
+  <rect x="40" y="255" width="280" height="55" rx="14" fill="url(#micGrad)" filter="url(#shadow)"/>
+  <text x="180" y="278" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">INMP441 で音声キャプチャ</text>
+  <text x="180" y="298" text-anchor="middle" fill="#fee2e2" font-size="10">I2S RX DMA → 検知後数秒分を取得</text>
+
+  <!-- Arrow INMP441 → Core 0 (right) -->
+  <line x1="320" y1="282" x2="403" y2="100" stroke="#22c55e" stroke-width="2.5"/>
+  <polygon points="397,97 407,93 404,104" fill="#22c55e"/>
+
+  <!-- ========== RIGHT COLUMN: Core0/1 → Cloud → スマホ ========== -->
+
+  <!-- Step 4: Core 0 -->
+  <rect x="405" y="55" width="155" height="55" rx="14" fill="url(#core0Grad)" filter="url(#shadow)"/>
+  <text x="482" y="78" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Core 0</text>
+  <text x="482" y="98" text-anchor="middle" fill="#d1fae5" font-size="10">Opus encode 16 kbps</text>
+
+  <!-- SPSC arrow Core0 → Core1 -->
+  <line x1="560" y1="82" x2="590" y2="82" stroke="#d97706" stroke-width="2.5"/>
+  <polygon points="587,76 600,82 587,88" fill="#d97706"/>
+  <text x="575" y="72" text-anchor="middle" fill="#92400e" font-size="8" font-weight="600">SPSC ring</text>
+
+  <!-- Step 5: Core 1 -->
+  <rect x="605" y="55" width="155" height="55" rx="14" fill="url(#core1Grad)" filter="url(#shadow)"/>
+  <text x="682" y="78" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Core 1</text>
+  <text x="682" y="98" text-anchor="middle" fill="#fef3c7" font-size="10">TLS でクラウド送信</text>
+
+  <!-- Arrow Cores → Cloud -->
+  <line x1="682" y1="110" x2="682" y2="145" stroke="#3b82f6" stroke-width="2.5"/>
+  <polygon points="676,142 682,155 688,142" fill="#3b82f6"/>
+  <!-- label -->
+  <rect x="505" y="120" width="165" height="20" rx="6" fill="#dbeafe"/>
+  <rect x="505" y="120" width="165" height="20" rx="6" fill="none" stroke="#93c5fd" stroke-width="0.5"/>
+  <text x="587" y="134" text-anchor="middle" fill="#1e40af" font-size="10">Opus packets + event metadata</text>
+
+  <!-- Step 6: Cloud -->
+  <rect x="505" y="160" width="255" height="55" rx="14" fill="url(#cloudGrad)" filter="url(#shadow)"/>
+  <text x="632" y="183" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">Cloud: イベント種別 + 音声を保存</text>
+  <text x="632" y="203" text-anchor="middle" fill="#dbeafe" font-size="10">relay + storage (GPU/CDN 不要)</text>
+
+  <!-- Arrow Cloud → Phone -->
+  <line x1="632" y1="215" x2="632" y2="250" stroke="#22c55e" stroke-width="2.5"/>
+  <polygon points="626,247 632,260 638,247" fill="#22c55e"/>
+
+  <!-- Step 7: Phone notification -->
+  <rect x="505" y="265" width="255" height="50" rx="14" fill="url(#phoneGrad)" filter="url(#shadow)"/>
+  <text x="632" y="287" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">スマホ通知 + トークバック</text>
+  <text x="632" y="305" text-anchor="middle" fill="#dcfce7" font-size="10">「ガラス破壊音を検知」→ 音声で応答</text>
+
+  <!-- ========== TIMELINE (bottom) ========== -->
+  <rect x="40" y="370" width="720" height="90" rx="10" fill="#f8fafc" filter="url(#shadow)"/>
+  <rect x="40" y="370" width="720" height="90" rx="10" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="105" y="393" text-anchor="middle" fill="#b45309" font-size="11" font-weight="700">タイムライン</text>
+
+  <!-- Timeline horizontal line -->
+  <line x1="60" y1="420" x2="740" y2="420" stroke="#cbd5e1" stroke-width="1.5"/>
+
+  <!-- 0.0s -->
+  <circle cx="80" cy="420" r="5" fill="#7c3aed"/>
+  <text x="80" y="412" text-anchor="middle" fill="#1e293b" font-size="9" font-weight="600">0.0s</text>
+  <text x="80" y="442" text-anchor="middle" fill="#64748b" font-size="8">D1 検知</text>
+
+  <!-- 0.0s RP2350 -->
+  <circle cx="190" cy="420" r="5" fill="#0284c7"/>
+  <text x="190" y="412" text-anchor="middle" fill="#1e293b" font-size="9" font-weight="600">0.0s</text>
+  <text x="190" y="442" text-anchor="middle" fill="#64748b" font-size="8">RP2350 割り込み</text>
+
+  <!-- 0.1s -->
+  <circle cx="300" cy="420" r="5" fill="#dc2626"/>
+  <text x="300" y="412" text-anchor="middle" fill="#1e293b" font-size="9" font-weight="600">0.1s</text>
+  <text x="300" y="442" text-anchor="middle" fill="#64748b" font-size="8">I2S DMA 開始</text>
+
+  <!-- 0.3s -->
+  <circle cx="410" cy="420" r="5" fill="#059669"/>
+  <text x="410" y="412" text-anchor="middle" fill="#1e293b" font-size="9" font-weight="600">0.3s</text>
+  <text x="410" y="442" text-anchor="middle" fill="#64748b" font-size="8">Opus 開始</text>
+
+  <!-- 1.8s -->
+  <circle cx="520" cy="420" r="5" fill="#d97706"/>
+  <text x="520" y="412" text-anchor="middle" fill="#1e293b" font-size="9" font-weight="600">1.8s</text>
+  <text x="520" y="442" text-anchor="middle" fill="#64748b" font-size="8">TLS 確立</text>
+
+  <!-- 2.0s -->
+  <circle cx="630" cy="420" r="7" fill="#16a34a"/>
+  <text x="630" y="410" text-anchor="middle" fill="#15803d" font-size="9" font-weight="700">2.0s</text>
+  <text x="630" y="442" text-anchor="middle" fill="#15803d" font-size="8" font-weight="600">証拠クラウド到達</text>
+
+  <!-- 5.0s -->
+  <circle cx="720" cy="420" r="5" fill="#dc2626"/>
+  <text x="720" y="410" text-anchor="middle" fill="#dc2626" font-size="9" font-weight="600">5.0s</text>
+  <text x="720" y="442" text-anchor="middle" fill="#dc2626" font-size="8">デバイス破壊</text>
+  <text x="720" y="454" text-anchor="middle" fill="#dc2626" font-size="8">→ もう遅い</text>
+</svg>

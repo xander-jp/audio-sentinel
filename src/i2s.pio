@@ -1,0 +1,57 @@
+; I2S TX (Philips standard, 16-bit stereo, 32 BCK per channel = 64 BCK per
+; frame). PCM5100A on Pico Audio Pack is hardwired for Philips I2S — it
+; expects MSB to arrive 1 BCK AFTER the LRCK transition. With 16 BCK per
+; channel we can't fit the 1-BCK delay + 16 data bits, so we expand the
+; frame to 32 BCK per channel: 1 delay + 16 data + 15 padding zeros.
+;
+; sideset bit 0 = BCK, sideset bit 1 = LRCK.
+; Word format (autopull at 32, shift left, MSB out first):
+;   bit 31      = "delay" bit (always 0, sampled at the BCK rise that
+;                 immediately follows the LRCK transition — DAC ignores)
+;   bits 30..15 = 16-bit signed sample, MSB at bit 30
+;   bits 14..0  = padding zeros (DAC ignores after LSB)
+;
+; Producer side packs each word as:  word = (uint32_t)(uint16_t)sample << 15
+; and writes TWO words per stereo frame (one per channel).
+
+.program i2s_out
+.side_set 2
+
+; --- Right channel: 32 BCK cycles, LRCK = 1 ---
+bitloop_r:
+    out pins, 1       side 0b10     ; data bit, BCK=0, LRCK=1
+    jmp x-- bitloop_r side 0b11     ; latch, BCK=1, LRCK=1 (DAC samples bit)
+    out pins, 1       side 0b10     ; 32nd data bit, BCK=0, LRCK=1
+    set x, 30         side 0b11     ; latch, BCK=1, LRCK=1  (x reloads to 30 = 32-2)
+
+; --- Left channel: 32 BCK cycles, LRCK = 0 ---
+; LRCK transitions cleanly on the BCK falling edge between bitloop_r's last
+; cycle (set x, 30 side 0b11) and bitloop_l's first cycle (out side 0b00).
+bitloop_l:
+    out pins, 1       side 0b00     ; data bit, BCK=0, LRCK=0
+    jmp x-- bitloop_l side 0b01     ; latch, BCK=1, LRCK=0
+    out pins, 1       side 0b00     ; 32nd data bit, BCK=0, LRCK=0
+    set x, 30         side 0b01     ; latch, BCK=1, LRCK=0
+
+; Wrap: bitloop_l → bitloop_r. LRCK rises 0→1 on the next BCK falling edge.
+
+% c-sdk {
+static inline void i2s_out_program_init(PIO pio, uint sm, uint offset,
+                                        uint data_pin, uint clock_pin_base) {
+    pio_gpio_init(pio, data_pin);
+    pio_gpio_init(pio, clock_pin_base);
+    pio_gpio_init(pio, clock_pin_base + 1);
+
+    pio_sm_config c = i2s_out_program_get_default_config(offset);
+    sm_config_set_out_pins(&c, data_pin, 1);
+    sm_config_set_sideset_pins(&c, clock_pin_base);
+    sm_config_set_out_shift(&c, false, true, 32);  // shift_left, autopull@32
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+
+    pio_sm_init(pio, sm, offset, &c);
+
+    uint pin_mask = (1u << data_pin) | (3u << clock_pin_base);
+    pio_sm_set_pindirs_with_mask(pio, sm, pin_mask, pin_mask);
+    pio_sm_set_pins(pio, sm, 0);
+}
+%}

@@ -1,0 +1,192 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="monospace" font-size="13">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#555"/>
+    </marker>
+    <marker id="arr-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arr-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#dc2626"/>
+    </marker>
+    <marker id="arr-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#16a34a"/>
+    </marker>
+    <marker id="arr-orange" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#ea580c"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="720" fill="#f8fafc" rx="8"/>
+
+  <!-- Title -->
+  <text x="640" y="32" text-anchor="middle" font-size="18" font-weight="bold" fill="#1e293b">DMA Pipeline Asymmetry — Downstream vs Upstream</text>
+  <text x="640" y="54" text-anchor="middle" font-size="12" fill="#64748b">Independent DMA rings · Opposite directions · Different buffering strategies</text>
+
+  <!-- ===================== VERTICAL COLUMN BANDS (behind everything) ===================== -->
+
+  <!-- Cloud column -->
+  <rect x="40" y="66" width="150" height="594" rx="4" fill="#f59e0b" opacity="0.04"/>
+  <line x1="190" y1="66" x2="190" y2="660" stroke="#f59e0b" stroke-width="0.5" opacity="0.3"/>
+
+  <!-- Core 1 column -->
+  <rect x="190" y="66" width="230" height="594" rx="0" fill="#2563eb" opacity="0.08" stroke="#000" stroke-width="2" stroke-dasharray="6,4"/>
+
+  <!-- IC Ring column -->
+  <rect x="420" y="66" width="175" height="594" rx="0" fill="#6366f1" opacity="0.04"/>
+  <line x1="595" y1="66" x2="595" y2="660" stroke="#6366f1" stroke-width="0.5" opacity="0.3"/>
+
+  <!-- Core 0 column -->
+  <rect x="595" y="66" width="240" height="594" rx="0" fill="#dc2626" opacity="0.08" stroke="#000" stroke-width="2" stroke-dasharray="6,4"/>
+
+  <!-- DMA Ring column -->
+  <rect x="835" y="66" width="210" height="594" rx="0" fill="#16a34a" opacity="0.04"/>
+  <line x1="1045" y1="66" x2="1045" y2="660" stroke="#16a34a" stroke-width="0.5" opacity="0.3"/>
+
+  <!-- I2S PIO column -->
+  <rect x="1045" y="66" width="205" height="594" rx="4" fill="#16a34a" opacity="0.04"/>
+
+  <!-- Column labels at bottom -->
+  <text x="115" y="680" text-anchor="middle" font-size="10" font-weight="bold" fill="#92400e" opacity="0.6">Cloud</text>
+  <text x="305" y="680" text-anchor="middle" font-size="10" font-weight="bold" fill="#1e40af" opacity="0.6">Core 1</text>
+  <text x="507" y="680" text-anchor="middle" font-size="10" font-weight="bold" fill="#4338ca" opacity="0.6">IC Ring</text>
+  <text x="717" y="680" text-anchor="middle" font-size="10" font-weight="bold" fill="#991b1b" opacity="0.6">Core 0</text>
+  <text x="940" y="680" text-anchor="middle" font-size="10" font-weight="bold" fill="#166534" opacity="0.6">DMA Ring</text>
+  <text x="1147" y="680" text-anchor="middle" font-size="10" font-weight="bold" fill="#166534" opacity="0.6">I2S PIO</text>
+
+  <!-- ===================== DOWNSTREAM (top half) ===================== -->
+  <!-- Flow: LEFT → RIGHT   Cloud → Core1 → IC → Core0 → AudioRing → DAC -->
+
+  <rect x="30" y="76" width="1220" height="280" rx="8" fill="#eff6ff" fill-opacity="0.5" stroke="#bfdbfe" stroke-width="1.5"/>
+  <text x="50" y="100" font-size="15" font-weight="bold" fill="#1e40af">▼ Downstream (TTS: Cloud → Speaker) — Streaming playback</text>
+  <text x="50" y="118" font-size="11" fill="#3b82f6">24 kHz · DMA read-increment · 32 KB ring · Realtime continuous playback</text>
+
+  <!-- Cloud -->
+  <rect x="50" y="145" width="130" height="60" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="115" y="170" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">Cloud</text>
+  <text x="115" y="186" text-anchor="middle" font-size="10" fill="#a16207">HTTPS chunked</text>
+
+  <line x1="180" y1="175" x2="228" y2="175" stroke="#555" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Core 1 (downstream) -->
+  <rect x="235" y="138" width="180" height="74" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="325" y="160" text-anchor="middle" font-size="11" font-weight="bold" fill="#1e40af">Core 1</text>
+  <text x="325" y="176" text-anchor="middle" font-size="10" fill="#2563eb">tts_forward_pump()</text>
+  <text x="325" y="192" text-anchor="middle" font-size="9" fill="#3b82f6">Opus pkt extraction</text>
+  <text x="325" y="204" text-anchor="middle" font-size="9" fill="#3b82f6">raw PCM extraction</text>
+
+  <line x1="415" y1="175" x2="468" y2="175" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+
+  <!-- IC Ring (downstream) -->
+  <rect x="475" y="150" width="110" height="50" rx="20" fill="#e0e7ff" stroke="#6366f1" stroke-width="1.5"/>
+  <text x="530" y="172" text-anchor="middle" font-size="11" font-weight="bold" fill="#4338ca">IC Ring</text>
+  <text x="530" y="186" text-anchor="middle" font-size="9" fill="#6366f1">C1 → C0</text>
+
+  <line x1="585" y1="175" x2="638" y2="175" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+
+  <!-- Core 0 (downstream) -->
+  <rect x="645" y="138" width="180" height="74" rx="6" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="735" y="160" text-anchor="middle" font-size="11" font-weight="bold" fill="#991b1b">Core 0</text>
+  <text x="735" y="176" text-anchor="middle" font-size="10" fill="#dc2626">opus_decode()</text>
+  <text x="735" y="192" text-anchor="middle" font-size="9" fill="#ef4444">mono → stereo L/R dup</text>
+  <text x="735" y="204" text-anchor="middle" font-size="9" fill="#ef4444">VLA ~3 KB stack</text>
+
+  <line x1="825" y1="175" x2="878" y2="175" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arr-red)"/>
+
+  <!-- Audio Ring -->
+  <rect x="885" y="135" width="150" height="80" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+  <text x="960" y="158" text-anchor="middle" font-size="12" font-weight="bold" fill="#166534">DMA Ring</text>
+  <text x="960" y="175" text-anchor="middle" font-size="11" fill="#16a34a">Audio 32 KB</text>
+  <text x="960" y="191" text-anchor="middle" font-size="9" fill="#15803d">4096 stereo frames</text>
+  <text x="960" y="205" text-anchor="middle" font-size="9" fill="#15803d">DMA read-increment</text>
+
+  <line x1="1035" y1="175" x2="1088" y2="175" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr-green)"/>
+
+  <!-- I2S DAC -->
+  <rect x="1095" y="148" width="120" height="54" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="1155" y="170" text-anchor="middle" font-size="11" font-weight="bold" fill="#166534">PIO2 I2S out</text>
+  <text x="1155" y="186" text-anchor="middle" font-size="10" fill="#16a34a">PCM5101A DAC</text>
+
+  <!-- Backpressure annotation -->
+  <rect x="50" y="240" width="720" height="42" rx="4" fill="#fff7ed" stroke="#fdba74" stroke-width="1"/>
+  <text x="62" y="256" font-size="10" fill="#9a3412">Back-pressure: audio ring 75% → IC dequeue stop → IC ring fill → forward_pump skip</text>
+  <text x="62" y="272" font-size="10" fill="#9a3412">  → g_https_resp fill → recv_cb ERR_MEM → TCP window close (auto cascade)</text>
+
+  <!-- Buffering strategy -->
+  <rect x="885" y="224" width="150" height="36" rx="4" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+  <text x="960" y="240" text-anchor="middle" font-size="9" fill="#166534">DMA ring absorbs</text>
+  <text x="960" y="252" text-anchor="middle" font-size="9" fill="#166534">network jitter</text>
+
+  <!-- Flow direction label -->
+  <text x="640" y="326" text-anchor="middle" font-size="11" fill="#94a3b8">▶ OUTPUT ▶</text>
+
+  <!-- ===================== UPSTREAM (bottom half) ===================== -->
+  <!-- Flow: RIGHT → LEFT   MIC → MicRing → Core0 → IC → Core1 → Cloud -->
+
+  <rect x="30" y="376" width="1220" height="280" rx="8" fill="#fef2f2" fill-opacity="0.5" stroke="#fecaca" stroke-width="1.5"/>
+  <text x="1200" y="400" text-anchor="end" font-size="15" font-weight="bold" fill="#991b1b">▲ Upstream (MIC → Cloud) — Push-to-talk batch upload</text>
+  <text x="1200" y="418" text-anchor="end" font-size="11" fill="#ef4444">16 kHz · DMA write-increment · 4 KB ring · Accumulate → POST</text>
+
+  <!-- Cloud (POST) -->
+  <rect x="50" y="445" width="130" height="60" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="115" y="467" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">Cloud</text>
+  <text x="115" y="483" text-anchor="middle" font-size="10" fill="#a16207">HTTPS POST</text>
+  <text x="115" y="497" text-anchor="middle" font-size="9" fill="#b45309">base64 JSON body</text>
+
+  <line x1="235" y1="475" x2="187" y2="475" stroke="#555" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Core 1 (upstream) — aligned with downstream -->
+  <rect x="235" y="438" width="180" height="74" rx="6" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="325" y="458" text-anchor="middle" font-size="11" font-weight="bold" fill="#1e40af">Core 1</text>
+  <text x="325" y="474" text-anchor="middle" font-size="10" fill="#2563eb">lp_accum_append()</text>
+  <text x="325" y="490" text-anchor="middle" font-size="9" fill="#3b82f6">12 KB accumulator</text>
+  <text x="325" y="504" text-anchor="middle" font-size="9" fill="#3b82f6">[u16 len][opus pkt] …</text>
+
+  <line x1="475" y1="475" x2="422" y2="475" stroke="#2563eb" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+
+  <!-- IC Ring (upstream) — aligned -->
+  <rect x="475" y="450" width="110" height="50" rx="20" fill="#e0e7ff" stroke="#6366f1" stroke-width="1.5"/>
+  <text x="530" y="472" text-anchor="middle" font-size="11" font-weight="bold" fill="#4338ca">IC Ring</text>
+  <text x="530" y="486" text-anchor="middle" font-size="9" fill="#6366f1">C0 → C1</text>
+
+  <line x1="645" y1="475" x2="592" y2="475" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arr-red)"/>
+
+  <!-- Core 0 (upstream) — aligned -->
+  <rect x="645" y="438" width="180" height="74" rx="6" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="735" y="458" text-anchor="middle" font-size="11" font-weight="bold" fill="#991b1b">Core 0</text>
+  <text x="735" y="474" text-anchor="middle" font-size="10" fill="#dc2626">mic_pump()</text>
+  <text x="735" y="490" text-anchor="middle" font-size="9" fill="#ef4444">20 ms frame accum (320 samp)</text>
+  <text x="735" y="504" text-anchor="middle" font-size="9" fill="#ef4444">→ opus_encode() 16 kbps</text>
+
+  <line x1="885" y1="475" x2="832" y2="475" stroke="#ea580c" stroke-width="1.5" marker-end="url(#arr-orange)"/>
+
+  <!-- MIC Ring — aligned with Audio Ring, same color (same component, different size) -->
+  <rect x="885" y="440" width="150" height="70" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+  <text x="960" y="462" text-anchor="middle" font-size="12" font-weight="bold" fill="#166534">DMA Ring</text>
+  <text x="960" y="479" text-anchor="middle" font-size="11" fill="#16a34a">MIC 8 KB</text>
+  <text x="960" y="495" text-anchor="middle" font-size="9" fill="#15803d">DMA write-increment</text>
+
+  <line x1="1095" y1="475" x2="1042" y2="475" stroke="#16a34a" stroke-width="1.5" marker-end="url(#arr-green)"/>
+
+  <!-- INMP441 MIC — aligned with DAC -->
+  <rect x="1095" y="448" width="120" height="54" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
+  <text x="1155" y="470" text-anchor="middle" font-size="11" font-weight="bold" fill="#166534">PIO0 I2S in</text>
+  <text x="1155" y="486" text-anchor="middle" font-size="10" fill="#16a34a">INMP441 MIC</text>
+
+  <!-- Size comparison callout -->
+  <rect x="910" y="516" width="100" height="24" rx="4" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+  <text x="960" y="532" text-anchor="middle" font-size="9" font-weight="bold" fill="#166534">1/4 of downstream</text>
+
+  <!-- Button trigger annotation -->
+  <rect x="50" y="512" width="140" height="24" rx="4" fill="#fff7ed" stroke="#fdba74" stroke-width="1"/>
+  <text x="120" y="528" text-anchor="middle" font-size="9" fill="#9a3412">POST on button release</text>
+
+  <!-- Buffering strategy -->
+  <rect x="250" y="520" width="150" height="36" rx="4" fill="#eff6ff" stroke="#93c5fd" stroke-width="1"/>
+  <text x="325" y="536" text-anchor="middle" font-size="9" fill="#1e40af">encoder + accumulator</text>
+  <text x="325" y="548" text-anchor="middle" font-size="9" fill="#1e40af">side buffering</text>
+
+  <!-- Flow direction label -->
+  <text x="640" y="370" text-anchor="middle" font-size="11" fill="#94a3b8">◀ INPUT ◀</text>
+</svg>

@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 480" font-family="'Helvetica Neue', Arial, sans-serif">
+  <defs>
+    <filter id="shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="1" dy="2" stdDeviation="3" flood-opacity="0.12"/>
+    </filter>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+    <linearGradient id="ndpGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="filterGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+    <linearGradient id="okGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#16a34a"/>
+      <stop offset="100%" stop-color="#15803d"/>
+    </linearGradient>
+    <linearGradient id="ngGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#b91c1c"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="720" height="480" rx="12" fill="url(#bgGrad)"/>
+
+  <!-- Title -->
+  <text x="360" y="32" text-anchor="middle" fill="#1e293b" font-size="14" font-weight="700">Lightweight Second Filter on MCU — Reject Before Wi-Fi Wake</text>
+
+  <!-- Step 1: NDP120 match -->
+  <rect x="230" y="50" width="260" height="45" rx="12" fill="url(#ndpGrad)" filter="url(#shadow)"/>
+  <text x="360" y="70" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">NDP120 match</text>
+  <text x="360" y="86" text-anchor="middle" fill="#e9d5ff" font-size="9">INT fires → RP2350 wakes from dormant</text>
+
+  <!-- Arrow -->
+  <line x1="360" y1="95" x2="360" y2="120" stroke="#475569" stroke-width="2"/>
+  <polygon points="354,117 360,130 366,117" fill="#475569"/>
+
+  <!-- Step 2: VAD -->
+  <rect x="230" y="135" width="260" height="40" rx="12" fill="url(#filterGrad)" filter="url(#shadow)"/>
+  <text x="360" y="160" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">VAD (voice activity detection)</text>
+
+  <!-- Arrow -->
+  <line x1="360" y1="175" x2="360" y2="200" stroke="#475569" stroke-width="2"/>
+  <polygon points="354,197 360,210 366,197" fill="#475569"/>
+
+  <!-- Step 3: Duration -->
+  <rect x="230" y="215" width="260" height="40" rx="12" fill="url(#filterGrad)" filter="url(#shadow)"/>
+  <text x="360" y="234" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Duration check</text>
+  <text x="360" y="248" text-anchor="middle" fill="#bae6fd" font-size="9">e.g. reject if outside 300ms–1200ms</text>
+
+  <!-- Arrow -->
+  <line x1="360" y1="255" x2="360" y2="280" stroke="#475569" stroke-width="2"/>
+  <polygon points="354,277 360,290 366,277" fill="#475569"/>
+
+  <!-- Step 4: Energy + ZCR -->
+  <rect x="230" y="295" width="260" height="40" rx="12" fill="url(#filterGrad)" filter="url(#shadow)"/>
+  <text x="360" y="320" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Mean energy + zero-crossing rate</text>
+
+  <!-- Branch point -->
+  <line x1="360" y1="335" x2="360" y2="365" stroke="#475569" stroke-width="2"/>
+
+  <!-- OK branch (left) -->
+  <line x1="360" y1="365" x2="220" y2="365" stroke="#16a34a" stroke-width="2.5"/>
+  <line x1="220" y1="365" x2="220" y2="400" stroke="#16a34a" stroke-width="2.5"/>
+  <polygon points="214,397 220,410 226,397" fill="#16a34a"/>
+  <rect x="175" y="355" width="30" height="18" rx="4" fill="#dcfce7"/>
+  <text x="190" y="367" text-anchor="middle" fill="#15803d" font-size="10" font-weight="700">OK</text>
+
+  <rect x="100" y="415" width="240" height="50" rx="12" fill="url(#okGrad)" filter="url(#shadow)"/>
+  <text x="220" y="437" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Wi-Fi wake → mxfs + Opus + POST</text>
+  <text x="220" y="455" text-anchor="middle" fill="#dcfce7" font-size="9">Worth spending the battery cost</text>
+
+  <!-- NG branch (right) -->
+  <line x1="360" y1="365" x2="530" y2="365" stroke="#dc2626" stroke-width="2.5"/>
+  <line x1="530" y1="365" x2="530" y2="400" stroke="#dc2626" stroke-width="2.5"/>
+  <polygon points="524,397 530,410 536,397" fill="#dc2626"/>
+  <rect x="505" y="355" width="30" height="18" rx="4" fill="#fee2e2"/>
+  <text x="520" y="367" text-anchor="middle" fill="#dc2626" font-size="10" font-weight="700">NG</text>
+
+  <rect x="410" y="415" width="240" height="50" rx="12" fill="url(#ngGrad)" filter="url(#shadow)"/>
+  <text x="530" y="437" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Back to dormant</text>
+  <text x="530" y="455" text-anchor="middle" fill="#fecaca" font-size="9">No Wi-Fi wake → battery preserved</text>
+
+  <!-- Cost labels on right side -->
+  <rect x="530" y="135" width="150" height="195" rx="8" fill="#f8fafc" filter="url(#shadow)"/>
+  <rect x="530" y="135" width="150" height="195" rx="8" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="605" y="157" text-anchor="middle" fill="#b45309" font-size="10" font-weight="700">Compute cost</text>
+  <line x1="545" y1="165" x2="665" y2="165" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="605" y="185" text-anchor="middle" fill="#64748b" font-size="9">VAD: near zero</text>
+  <text x="605" y="210" text-anchor="middle" fill="#64748b" font-size="9">Duration: near zero</text>
+  <text x="605" y="235" text-anchor="middle" fill="#64748b" font-size="9">Energy/ZCR: near zero</text>
+  <text x="605" y="265" text-anchor="middle" fill="#64748b" font-size="9">Mel distribution: light</text>
+  <text x="605" y="290" text-anchor="middle" fill="#64748b" font-size="9">Mahalanobis: 1 matrix op</text>
+  <line x1="545" y1="300" x2="665" y2="300" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="605" y="320" text-anchor="middle" fill="#1e293b" font-size="9" font-weight="600">Total: 1/10,000th of</text>
+  <text x="605" y="323" text-anchor="middle" fill="#15803d" font-size="9" font-weight="700">a Wi-Fi TX burst</text>
+</svg>

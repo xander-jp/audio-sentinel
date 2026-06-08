@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 380" font-family="'Helvetica Neue', Arial, sans-serif">
+  <defs>
+    <filter id="shadow" x="-2%" y="-2%" width="104%" height="104%">
+      <feDropShadow dx="1" dy="2" stdDeviation="3" flood-opacity="0.12"/>
+    </filter>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="820" height="380" rx="12" fill="url(#bgGrad)"/>
+
+  <!-- Title -->
+  <text x="410" y="32" text-anchor="middle" fill="#1e293b" font-size="14" font-weight="700">mxfs Flash バッファリング — 検知直後の音声を取りこぼさない</text>
+
+  <!-- Timeline bar background -->
+  <rect x="40" y="55" width="740" height="260" rx="12" fill="#f8fafc" filter="url(#shadow)"/>
+  <rect x="40" y="55" width="740" height="260" rx="12" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+
+  <!-- Vertical timeline line -->
+  <line x1="120" y1="75" x2="120" y2="295" stroke="#cbd5e1" stroke-width="2"/>
+
+  <!-- 0.0s D1 detection -->
+  <circle cx="120" cy="90" r="7" fill="#7c3aed"/>
+  <text x="140" y="88" fill="#1e293b" font-size="11" font-weight="700">0.0 s</text>
+  <text x="210" y="88" fill="#475569" font-size="10">D1 検知 → RP2350 起床 → I2S DMA 開始</text>
+
+  <!-- 0.0s PCM → mxfs -->
+  <circle cx="120" cy="130" r="7" fill="#0891b2"/>
+  <text x="140" y="128" fill="#1e293b" font-size="11" font-weight="700">0.0 s</text>
+  <text x="210" y="128" fill="#475569" font-size="10">PCM → mxfs append → SPI Flash</text>
+
+  <!-- Flash buffer box -->
+  <rect x="210" y="138" width="280" height="30" rx="6" fill="#ecfdf5"/>
+  <rect x="210" y="138" width="280" height="30" rx="6" fill="none" stroke="#6ee7b7" stroke-width="1"/>
+  <text x="350" y="158" text-anchor="middle" fill="#047857" font-size="10" font-weight="600">append-only · 電源断でも安全 · fsck 不要</text>
+
+  <!-- Parallel Wi-Fi/TLS bracket -->
+  <rect x="520" y="85" width="230" height="95" rx="8" fill="#eff6ff"/>
+  <rect x="520" y="85" width="230" height="95" rx="8" fill="none" stroke="#93c5fd" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="635" y="108" text-anchor="middle" fill="#1e40af" font-size="10" font-weight="600">並行処理</text>
+  <text x="635" y="128" text-anchor="middle" fill="#475569" font-size="9">Wi-Fi association ~1.5 s</text>
+  <text x="635" y="145" text-anchor="middle" fill="#475569" font-size="9">TLS handshake ~0.3 s</text>
+  <text x="635" y="165" text-anchor="middle" fill="#64748b" font-size="8">↑ PCM は Flash に蓄積され続ける</text>
+
+  <!-- 1.8s TLS established -->
+  <circle cx="120" cy="205" r="7" fill="#d97706"/>
+  <text x="140" y="203" fill="#1e293b" font-size="11" font-weight="700">1.8 s</text>
+  <text x="210" y="203" fill="#475569" font-size="10">TLS 確立 → Flash から PCM 読み出し → Opus encode → 送信</text>
+
+  <!-- 2.0s Evidence in cloud -->
+  <circle cx="120" cy="250" r="9" fill="#16a34a"/>
+  <text x="140" y="248" fill="#15803d" font-size="11" font-weight="700">2.0 s</text>
+  <text x="210" y="248" fill="#15803d" font-size="10" font-weight="600">検知直後の音声を含む証拠がクラウドに到達</text>
+
+  <!-- Result box -->
+  <rect x="210" y="262" width="400" height="28" rx="6" fill="#dcfce7"/>
+  <rect x="210" y="262" width="400" height="28" rx="6" fill="none" stroke="#4ade80" stroke-width="1"/>
+  <text x="410" y="280" text-anchor="middle" fill="#15803d" font-size="10" font-weight="600">ガラスが割れる音・叫び声・侵入音 — 最も重要な 1.8 秒を逃さない</text>
+
+  <!-- Bottom note -->
+  <text x="410" y="340" text-anchor="middle" fill="#64748b" font-size="10">mxfs: bare-metal 向け append-only ログ構造ファイルシステム (≤10 KB RAM, ~1 KB code)</text>
+  <text x="410" y="358" text-anchor="middle" fill="#3b82f6" font-size="9">https://github.com/xander-jp/mxfs</text>
+</svg>

@@ -1,0 +1,201 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" font-family="system-ui, -apple-system, sans-serif" font-size="13">
+  <defs>
+    <marker id="arr-down" markerWidth="10" markerHeight="8" refX="5" refY="8" orient="auto">
+      <path d="M0,0 L5,8 L10,0 Z" fill="#6d28d9"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="900" fill="#fafafa" rx="10"/>
+
+  <!-- Title -->
+  <text x="600" y="40" text-anchor="middle" font-size="22" font-weight="bold" fill="#111">CloseCast — Voice Infrastructure Transformation</text>
+
+  <!-- ================================================================== -->
+  <!-- BEFORE -->
+  <!-- ================================================================== -->
+  <rect x="40" y="65" width="520" height="310" rx="14" fill="#fef2f2" stroke="#dc2626" stroke-width="2.5"/>
+  <text x="300" y="95" text-anchor="middle" font-size="18" font-weight="bold" fill="#991b1b">BEFORE  —  Cloud Heavy</text>
+
+  <!-- Cloud stack -->
+  <rect x="70" y="115" width="220" height="240" rx="8" fill="white" stroke="#f87171" stroke-width="1.5"/>
+  <text x="180" y="140" text-anchor="middle" font-size="14" font-weight="bold" fill="#dc2626">Cloud (everything)</text>
+  <rect x="90" y="152" width="180" height="26" rx="4" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="180" y="170" text-anchor="middle" font-size="12" fill="#7f1d1d">CDN Distribution</text>
+  <rect x="90" y="184" width="180" height="26" rx="4" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="180" y="202" text-anchor="middle" font-size="12" fill="#7f1d1d">GPU Always-On</text>
+  <rect x="90" y="216" width="180" height="26" rx="4" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="180" y="234" text-anchor="middle" font-size="12" fill="#7f1d1d">Kubernetes</text>
+  <rect x="90" y="248" width="180" height="26" rx="4" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="180" y="266" text-anchor="middle" font-size="12" fill="#7f1d1d">SIP / WebRTC Infra</text>
+  <rect x="90" y="280" width="180" height="26" rx="4" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="180" y="298" text-anchor="middle" font-size="12" fill="#7f1d1d">Voice Conversion Server</text>
+  <text x="180" y="338" text-anchor="middle" font-size="11" fill="#991b1b" font-weight="bold">High Cost / Centralized</text>
+
+  <!-- Endpoint -->
+  <rect x="320" y="115" width="220" height="150" rx="8" fill="white" stroke="#f87171" stroke-width="1.5"/>
+  <text x="430" y="140" text-anchor="middle" font-size="14" font-weight="bold" fill="#dc2626">Endpoint</text>
+  <rect x="340" y="152" width="180" height="26" rx="4" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="430" y="170" text-anchor="middle" font-size="12" fill="#7f1d1d">Smartphone / PC required</text>
+  <rect x="340" y="184" width="180" height="26" rx="4" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="430" y="202" text-anchor="middle" font-size="12" fill="#7f1d1d">App / Browser dependency</text>
+  <rect x="340" y="216" width="180" height="26" rx="4" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="430" y="234" text-anchor="middle" font-size="12" fill="#7f1d1d">Always-on = expensive</text>
+
+  <!-- Pain point -->
+  <text x="430" y="305" text-anchor="middle" font-size="13" fill="#991b1b" font-weight="bold">"Voice delivery is expensive"</text>
+
+  <!-- ================================================================== -->
+  <!-- Arrow down -->
+  <!-- ================================================================== -->
+  <line x1="600" y1="385" x2="600" y2="415" stroke="#6d28d9" stroke-width="3" marker-end="url(#arr-down)"/>
+  <text x="600" y="408" text-anchor="middle" font-size="13" font-weight="bold" fill="#6d28d9">INVERSION</text>
+
+  <!-- ================================================================== -->
+  <!-- AFTER -->
+  <!-- ================================================================== -->
+  <rect x="40" y="425" width="520" height="310" rx="14" fill="#f0fdf4" stroke="#16a34a" stroke-width="2.5"/>
+  <text x="300" y="455" text-anchor="middle" font-size="18" font-weight="bold" fill="#166534">AFTER  —  Publisher Maximum</text>
+
+  <!-- Cloud (minimum) -->
+  <rect x="70" y="475" width="190" height="130" rx="8" fill="white" stroke="#86efac" stroke-width="1.5"/>
+  <text x="165" y="500" text-anchor="middle" font-size="14" font-weight="bold" fill="#16a34a">Cloud (minimum)</text>
+  <rect x="85" y="512" width="160" height="24" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="165" y="529" text-anchor="middle" font-size="12" fill="#14532d">register</text>
+  <rect x="85" y="540" width="160" height="24" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="165" y="557" text-anchor="middle" font-size="12" fill="#14532d">tunnel</text>
+  <rect x="85" y="568" width="160" height="24" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="165" y="585" text-anchor="middle" font-size="12" fill="#14532d">relay</text>
+
+  <!-- Publisher (maximum) -->
+  <rect x="280" y="475" width="130" height="150" rx="8" fill="white" stroke="#fbbf24" stroke-width="1.5"/>
+  <text x="345" y="498" text-anchor="middle" font-size="13" font-weight="bold" fill="#a16207">Publisher</text>
+  <rect x="290" y="508" width="110" height="22" rx="4" fill="#fef9c3" stroke="#fbbf24" stroke-width="1"/>
+  <text x="345" y="523" text-anchor="middle" font-size="11" fill="#78350f">mixer</text>
+  <rect x="290" y="534" width="110" height="22" rx="4" fill="#fef9c3" stroke="#fbbf24" stroke-width="1"/>
+  <text x="345" y="549" text-anchor="middle" font-size="11" fill="#78350f">radio / MIC</text>
+  <rect x="290" y="560" width="110" height="22" rx="4" fill="#fef9c3" stroke="#fbbf24" stroke-width="1"/>
+  <text x="345" y="575" text-anchor="middle" font-size="11" fill="#78350f">custom services</text>
+  <rect x="290" y="586" width="110" height="22" rx="4" fill="#fef9c3" stroke="#fbbf24" stroke-width="1"/>
+  <text x="345" y="601" text-anchor="middle" font-size="11" fill="#78350f">seamless register</text>
+
+  <!-- MCU Node -->
+  <rect x="430" y="475" width="120" height="170" rx="8" fill="white" stroke="#16a34a" stroke-width="2"/>
+  <text x="490" y="498" text-anchor="middle" font-size="13" font-weight="bold" fill="#166534">MCU Node</text>
+  <rect x="440" y="508" width="100" height="20" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="490" y="522" text-anchor="middle" font-size="10" fill="#14532d">RP2350 ($7)</text>
+  <rect x="440" y="532" width="100" height="20" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="490" y="546" text-anchor="middle" font-size="10" fill="#14532d">Opus on-chip</text>
+  <rect x="440" y="556" width="100" height="20" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="490" y="570" text-anchor="middle" font-size="10" fill="#14532d">TLS always-on</text>
+  <rect x="440" y="580" width="100" height="20" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="490" y="594" text-anchor="middle" font-size="10" fill="#14532d">WiFi direct</text>
+  <rect x="440" y="604" width="100" height="20" rx="4" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="490" y="618" text-anchor="middle" font-size="10" fill="#14532d">BLE provision</text>
+
+  <!-- Key message -->
+  <text x="300" y="710" text-anchor="middle" font-size="14" fill="#166534" font-weight="bold">Millions of always-connected voice nodes. No smartphone. No app.</text>
+
+  <!-- ================================================================== -->
+  <!-- Arrow down -->
+  <!-- ================================================================== -->
+  <line x1="600" y1="745" x2="600" y2="775" stroke="#6d28d9" stroke-width="3" marker-end="url(#arr-down)"/>
+
+  <!-- ================================================================== -->
+  <!-- NEW BUSINESS -->
+  <!-- ================================================================== -->
+  <rect x="40" y="785" width="1120" height="100" rx="14" fill="#f5f3ff" stroke="#7c3aed" stroke-width="2.5"/>
+  <text x="600" y="813" text-anchor="middle" font-size="18" font-weight="bold" fill="#5b21b6">NEW BUSINESS</text>
+
+  <rect x="60" y="828" width="120" height="40" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="120" y="843" text-anchor="middle" font-size="11" font-weight="bold" fill="#5b21b6">AI Radio</text>
+  <text x="120" y="858" text-anchor="middle" font-size="10" fill="#6d28d9">AI DJ</text>
+
+  <rect x="195" y="828" width="120" height="40" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="255" y="843" text-anchor="middle" font-size="11" font-weight="bold" fill="#5b21b6">Store Audio</text>
+  <text x="255" y="858" text-anchor="middle" font-size="10" fill="#6d28d9">BGM / SaaS</text>
+
+  <rect x="330" y="828" width="120" height="40" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="390" y="843" text-anchor="middle" font-size="11" font-weight="bold" fill="#5b21b6">Disaster</text>
+  <text x="390" y="858" text-anchor="middle" font-size="10" fill="#6d28d9">Autonomous Net</text>
+
+  <rect x="465" y="828" width="120" height="40" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="525" y="843" text-anchor="middle" font-size="11" font-weight="bold" fill="#5b21b6">Education</text>
+  <text x="525" y="858" text-anchor="middle" font-size="10" fill="#6d28d9">AI Conversation</text>
+
+  <rect x="600" y="828" width="120" height="40" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="660" y="843" text-anchor="middle" font-size="11" font-weight="bold" fill="#5b21b6">Multilingual</text>
+  <text x="660" y="858" text-anchor="middle" font-size="10" fill="#6d28d9">Guide / Announce</text>
+
+  <rect x="735" y="828" width="120" height="40" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="795" y="843" text-anchor="middle" font-size="11" font-weight="bold" fill="#5b21b6">Push Audio</text>
+  <text x="795" y="858" text-anchor="middle" font-size="10" fill="#6d28d9">AI Notification</text>
+
+  <rect x="870" y="828" width="120" height="40" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="930" y="843" text-anchor="middle" font-size="11" font-weight="bold" fill="#5b21b6">Character</text>
+  <text x="930" y="858" text-anchor="middle" font-size="10" fill="#6d28d9">AI Streaming</text>
+
+  <rect x="1005" y="828" width="140" height="40" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="1075" y="843" text-anchor="middle" font-size="11" font-weight="bold" fill="#5b21b6">Push-to-Talk</text>
+  <text x="1075" y="858" text-anchor="middle" font-size="10" fill="#6d28d9">SIP-less Voice</text>
+
+  <!-- ================================================================== -->
+  <!-- RIGHT COLUMN — Key Insights -->
+  <!-- ================================================================== -->
+  <rect x="640" y="65" width="520" height="310" rx="14" fill="#fffbeb" stroke="#d97706" stroke-width="2.5"/>
+  <text x="900" y="95" text-anchor="middle" font-size="18" font-weight="bold" fill="#92400e">What This PoC Proves</text>
+
+  <!-- Insight 1 -->
+  <rect x="665" y="115" width="475" height="52" rx="8" fill="white" stroke="#fbbf24" stroke-width="1.5"/>
+  <text x="680" y="137" font-size="14" font-weight="bold" fill="#92400e">1</text>
+  <text x="700" y="137" font-size="13" font-weight="bold" fill="#78350f">MCU becomes a "voice node"</text>
+  <text x="700" y="155" font-size="11" fill="#92400e">Opus + TLS + WSS + Audio Ring running simultaneously on RP2350</text>
+
+  <!-- Insight 2 -->
+  <rect x="665" y="177" width="475" height="52" rx="8" fill="white" stroke="#fbbf24" stroke-width="1.5"/>
+  <text x="680" y="199" font-size="14" font-weight="bold" fill="#92400e">2</text>
+  <text x="700" y="199" font-size="13" font-weight="bold" fill="#78350f">Cloud minimum / Publisher maximum separation works</text>
+  <text x="700" y="217" font-size="11" fill="#92400e">Cloud = register + tunnel + relay. Publisher owns the service.</text>
+
+  <!-- Insight 3 -->
+  <rect x="665" y="239" width="475" height="52" rx="8" fill="white" stroke="#fbbf24" stroke-width="1.5"/>
+  <text x="680" y="261" font-size="14" font-weight="bold" fill="#92400e">3</text>
+  <text x="700" y="261" font-size="13" font-weight="bold" fill="#78350f">This scales to millions</text>
+  <text x="700" y="279" font-size="11" fill="#92400e">$7 per node. BLE zero-touch provision. Same arch: 1 or 1,000,000.</text>
+
+  <!-- Insight 4 -->
+  <rect x="665" y="301" width="475" height="52" rx="8" fill="white" stroke="#fbbf24" stroke-width="1.5"/>
+  <text x="680" y="323" font-size="14" font-weight="bold" fill="#92400e">4</text>
+  <text x="700" y="323" font-size="13" font-weight="bold" fill="#78350f">Cost structure is inverted</text>
+  <text x="700" y="341" font-size="11" fill="#92400e">Opus 16 kbps + tiny stack + dual core = ultra-lightweight voice delivery</text>
+
+  <!-- Right column — AFTER side (cost comparison) -->
+  <rect x="640" y="425" width="520" height="310" rx="14" fill="#f0f9ff" stroke="#0284c7" stroke-width="2.5"/>
+  <text x="900" y="455" text-anchor="middle" font-size="18" font-weight="bold" fill="#0c4a6e">Cost Structure Comparison</text>
+
+  <!-- Traditional -->
+  <rect x="665" y="475" width="230" height="240" rx="8" fill="#fee2e2" stroke="#f87171" stroke-width="1.5"/>
+  <text x="780" y="498" text-anchor="middle" font-size="13" font-weight="bold" fill="#991b1b">Traditional</text>
+  <text x="680" y="520" font-size="12" fill="#7f1d1d">Server: GPU + CDN + K8s</text>
+  <text x="680" y="542" font-size="12" fill="#7f1d1d">Endpoint: Smartphone/PC</text>
+  <text x="680" y="564" font-size="12" fill="#7f1d1d">Connect: App required</text>
+  <text x="680" y="586" font-size="12" fill="#7f1d1d">Bandwidth: High</text>
+  <text x="680" y="608" font-size="12" fill="#7f1d1d">(PCM / AAC stream)</text>
+  <text x="680" y="636" font-size="12" fill="#7f1d1d">Ops: Expensive</text>
+  <text x="680" y="656" font-size="12" fill="#7f1d1d">Scale: Difficult</text>
+  <rect x="690" y="675" width="180" height="26" rx="13" fill="#dc2626"/>
+  <text x="780" y="693" text-anchor="middle" font-size="12" font-weight="bold" fill="white">$$$$</text>
+
+  <!-- CloseCast -->
+  <rect x="915" y="475" width="230" height="240" rx="8" fill="#dcfce7" stroke="#86efac" stroke-width="1.5"/>
+  <text x="1030" y="498" text-anchor="middle" font-size="13" font-weight="bold" fill="#166534">CloseCast</text>
+  <text x="930" y="520" font-size="12" fill="#14532d">Server: register + relay</text>
+  <text x="930" y="542" font-size="12" fill="#14532d">Endpoint: MCU ($7)</text>
+  <text x="930" y="564" font-size="12" fill="#14532d">Connect: WiFi direct</text>
+  <text x="930" y="586" font-size="12" fill="#14532d">Bandwidth: Low</text>
+  <text x="930" y="608" font-size="12" fill="#14532d">(Opus 16-24 kbps)</text>
+  <text x="930" y="636" font-size="12" fill="#14532d">Ops: BLE provision only</text>
+  <text x="930" y="656" font-size="12" fill="#14532d">Scale: Linear</text>
+  <rect x="940" y="675" width="180" height="26" rx="13" fill="#16a34a"/>
+  <text x="1030" y="693" text-anchor="middle" font-size="12" font-weight="bold" fill="white">$</text>
+</svg>

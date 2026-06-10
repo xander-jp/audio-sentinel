@@ -19,6 +19,9 @@
 #include "hardware/watchdog.h"
 #include "hardware/clocks.h"
 #include "hardware/vreg.h"   // vreg_set_voltage for 200 MHz overclock
+#include "hardware/sync.h"           // save_and_disable_interrupts (BOOTSEL read)
+#include "hardware/structs/ioqspi.h" // QSPI SS pad override (BOOTSEL read)
+#include "hardware/structs/sio.h"    // gpio_hi_in (BOOTSEL read)
 
 #include "common.h"
 #include "st7789.h"
@@ -44,7 +47,11 @@
 #define API_URL         "https://d2bbeowpg2f545.cloudfront.net/"
 #endif
 
-// GPIO held LOW at boot to force BLE provisioning mode (Button-Y on PicoLCD-1.3).
+// Two boot-time triggers force BLE provisioning mode:
+//  - GP21 held LOW (Button-Y on PicoLCD-1.3) — needs the display attached.
+//  - The Pico 2 W onboard BOOTSEL button — for headless/display-less boards
+//    where GP21 isn't wired to anything pressable. Read at runtime via the
+//    QSPI-CS trick (see read_bootsel_button below).
 #define PROV_BUTTON_PIN  21
 
 #define TIMELINE_POLL_INTERVAL_MS 10000
@@ -652,6 +659,16 @@ static void on_core0_audio_test_tick(void) {
     }
 }
 
+// One-shot: armed when the startup auto-fetch is triggered, consumed by the
+// first IC_MSG_LABS_READY. Gates the single-lab auto-pilot to the boot fetch
+// only — manual Button-X re-fetches never auto-press Enter.
+static bool g_autopilot_armed = false;
+// Set by the LABS_READY handler when the boot fetch yields a single lab;
+// executed in on_core0_running (the main-loop body). The Enter action must
+// NOT run inside handle_core0_notify: it issues a blocking ic_send, and doing
+// that from within the FIFO drain loop can two-way-deadlock with core1.
+static bool g_autopilot_pending = false;
+
 static void on_core0_audio_ready(void) {
     printf("[core0] S0 done → notify core1 AUDIO_READY\n");
     ic_send(IC_MSG_AUDIO_READY, NULL, 0);
@@ -665,6 +682,20 @@ static void on_core0_running(void) {
     if (last_log == 0) last_log = board_millis();
 
     buttons_poll();
+
+    // Deferred single-lab auto-pilot (armed by the startup auto-fetch). Run
+    // here in the main-loop body — same context as a manual Enter via
+    // buttons_poll — because lab_enter_action() issues a blocking ic_send.
+    // The active-state guard keeps it a pure auto-start, never an auto-stop.
+    if (g_autopilot_pending) {
+        g_autopilot_pending = false;
+        if (g_view == VIEW_LABS && g_lab_state == LAB_OK && g_lab_count == 1
+            && !g_timeline_active && !g_linephone_active && !g_tts_play_active) {
+            g_lab_selected = 0;
+            printf("[core0] auto-pilot: single lab, pressing Enter\n");
+            lab_enter_action();
+        }
+    }
 
     // Drain captured PCM from the INMP441 DMA ring, encode 20 ms frames,
     // and ship each opus packet to core1 via IC_MSG_LINEPHONE_OPUS_PKT.
@@ -686,6 +717,7 @@ static void on_core0_running(void) {
     // Auto-fetch lab list once network comes up
     if (!auto_fetched) {
         auto_fetched = true;
+        g_autopilot_armed = true;
         mem_barrier();
         printf("[core0] auto-fetch triggered\n");
         trigger_fetch();
@@ -790,6 +822,17 @@ static void handle_core0_notify(ic_msg_t type, const uint8_t *payload, uint16_t 
             if (g_lab_state == LAB_OK)        render_lab_list();
             else if (g_lab_state == LAB_ERR)  render_lab_error();
         }
+        // Auto-pilot: on the startup auto-fetch only, when the list resolves
+        // to exactly one lab, request an automatic Enter on it. The
+        // g_autopilot_armed one-shot keeps this off for manual Button-X
+        // re-fetches. We only flag it here and let on_core0_running run the
+        // Enter action outside the FIFO drain loop (see g_autopilot_pending).
+        if (g_autopilot_armed) {
+            g_autopilot_armed = false;
+            if (g_lab_state == LAB_OK && g_lab_count == 1) {
+                g_autopilot_pending = true;
+            }
+        }
         break;
     case IC_MSG_TTS_PCM_CHUNK:
         if (g_core0_pcm_pending_len + length > TTS_PCM_PENDING_CAP) {
@@ -837,20 +880,97 @@ static void handle_core0_notify(ic_msg_t type, const uint8_t *payload, uint16_t 
 }
 
 //=============================================================================
+// Read the onboard BOOTSEL button at runtime. There is no GPIO for it: the
+// button sits on the QSPI chip-select line, so we momentarily drive that pad's
+// output-enable low (releasing the flash CS), sample the pin through SIO, then
+// restore it. The flash can't be accessed while CS is perturbed, so this whole
+// routine MUST run from RAM (__no_inline_not_in_flash_func) with interrupts
+// disabled — otherwise an XIP fetch mid-sample would hang the core. Returns
+// true while the button is held. (Standard pico-sdk idiom; RP2350 reads the
+// CS state from SIO_GPIO_HI_IN_QSPI_CSN rather than a GPIO bit.)
+static bool __no_inline_not_in_flash_func(read_bootsel_button)(void) {
+    const uint CS_PIN_INDEX = 1;
+    uint32_t flags = save_and_disable_interrupts();
+
+    hw_write_masked(&ioqspi_hw->io[CS_PIN_INDEX].ctrl,
+                    GPIO_OVERRIDE_LOW << IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_LSB,
+                    IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_BITS);
+
+    // Brief settle so the pad reflects the (un)pressed level before we sample.
+    for (volatile int i = 0; i < 1000; ++i) tight_loop_contents();
+
+    // Pressed pulls CS low → invert. RP2350 surfaces the QSPI CS input here.
+    bool pressed = !(sio_hw->gpio_hi_in & SIO_GPIO_HI_IN_QSPI_CSN_BITS);
+
+    hw_write_masked(&ioqspi_hw->io[CS_PIN_INDEX].ctrl,
+                    GPIO_OVERRIDE_NORMAL << IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_LSB,
+                    IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_BITS);
+
+    restore_interrupts(flags);
+    return pressed;
+}
+
+// Rapid LED flash (~1.3 s) on the CYW43 onboard LED. Used as the "entering
+// provisioning" signal — requires cyw43_arch_init() to have already succeeded.
+static void led_fast_blink(void) {
+    for (int i = 0; i < 16; i++) {
+        cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, i & 1);
+        sleep_ms(80);
+    }
+    cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
+}
+
+// Visible BOOTSEL provisioning window. The onboard LED lives on the CYW43
+// chip, so this requires cyw43_arch_init() to have already succeeded. We blink
+// the LED slowly five times (~2.5 s) to give the operator an obvious moment to
+// tap BOOTSEL on a display-less board, polling the button often so a brief tap
+// isn't missed. Returns true on a hit (caller enters provisioning, which does
+// the fast-blink confirmation). NOTE: BOOTSEL must NOT be held from the instant
+// of power-up — that lands in the bootrom's UF2 mass-storage mode. Power on
+// first, wait for the slow blink, then tap.
+static bool run_bootsel_prov_window(void) {
+    const int      SLOW_BLINKS = 5;
+    const uint32_t HALF_MS     = 250;  // LED half-period (slow, visible)
+    const uint32_t POLL_MS     = 10;   // BOOTSEL sample cadence
+    bool pressed = false;
+
+    printf("[boot] BOOTSEL window: tap to enter provisioning\n");
+    for (int b = 0; b < SLOW_BLINKS && !pressed; b++) {
+        for (int phase = 0; phase < 2 && !pressed; phase++) {
+            cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, phase == 0 ? 1 : 0);
+            for (uint32_t t = 0; t < HALF_MS && !pressed; t += POLL_MS) {
+                if (read_bootsel_button()) pressed = true;
+                sleep_ms(POLL_MS);
+            }
+        }
+    }
+
+    cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
+    if (pressed) printf("[boot] BOOTSEL detected — entering provisioning\n");
+    return pressed;
+}
+
 // Provisioning bootmode — runs entirely on core0, never returns. On
 // successful Commit we save to flash and reboot so the normal boot path
 // picks up the new creds. We deliberately don't launch core1 here so the
-// flash write doesn't have to fight WiFi/lwIP for the bus.
+// flash write doesn't have to fight WiFi/lwIP for the bus. cyw43_ready means
+// the caller already ran cyw43_arch_init() (for the BOOTSEL window) and we
+// must not init it twice.
 //=============================================================================
-static void run_provisioning_and_reboot(void) {
+static void run_provisioning_and_reboot(bool cyw43_ready) {
     set_status("BLE prov mode");
     render_status_view();
 
-    if (cyw43_arch_init()) {
+    if (!cyw43_ready && cyw43_arch_init()) {
         printf("[prov] cyw43_arch_init failed\n");
         set_status("BLE: init fail");
         HALT();
     }
+
+    // Fast-blink the onboard LED right before we enter provisioning — a single
+    // consistent signal for every trigger (GP21 / BOOTSEL / no-creds). cyw43 is
+    // guaranteed up by this point.
+    led_fast_blink();
 
     wifi_creds_t creds = {0};
     // 0 = no timeout — user holds the device until done.
@@ -923,18 +1043,36 @@ int main() {
     render_status_view();
 
     // Determine bootmode:
-    //  - GP21 held LOW at boot          → force BLE provisioning
+    //  - GP21 held LOW at boot          → force BLE provisioning (display Y-btn)
+    //  - BOOTSEL tapped in the window   → force BLE provisioning (headless board)
     //  - No valid creds in flash        → fall through to provisioning
     //  - Otherwise                      → normal WiFi/HTTPS boot
     sleep_ms(50);  // let GPIO pulls settle
     bool button_held = (gpio_get(PROV_BUTTON_PIN) == 0);
     bool have_creds  = (creds_load(&g_wifi_creds) == 0);
-    printf("[boot] button_held=%d have_creds=%d\n", button_held, have_creds);
 
-    if (button_held || !have_creds) {
-        set_status(button_held ? "BLE: forced" : "BLE: no creds");
-        run_provisioning_and_reboot();  // never returns
+    // The BOOTSEL window needs the onboard LED, which is on the CYW43 chip, so
+    // bring cyw43 up here on core0 just for the window. If we end up provisioning
+    // we keep it (provisioning runs on core0); for a normal boot we hand it back
+    // with cyw43_arch_deinit() so core1 can own it cleanly (threadsafe-background
+    // installs its async_context on whichever core calls init).
+    bool cyw43_ready = (cyw43_arch_init() == 0);
+    if (!cyw43_ready) printf("[boot] cyw43 init failed — skipping BOOTSEL window\n");
+
+    bool bootsel_tapped = cyw43_ready && run_bootsel_prov_window();
+    bool want_prov = button_held || bootsel_tapped || !have_creds;
+    printf("[boot] gp21=%d bootsel=%d have_creds=%d -> prov=%d\n",
+           button_held, bootsel_tapped, have_creds, want_prov);
+
+    if (want_prov) {
+        set_status(button_held ? "BLE: forced"
+                   : bootsel_tapped ? "BLE: BOOTSEL"
+                   : "BLE: no creds");
+        run_provisioning_and_reboot(cyw43_ready);  // never returns
     }
+
+    // Normal boot: release cyw43 on core0 so core1 re-inits and owns it.
+    if (cyw43_ready) cyw43_arch_deinit();
 
     ic_init();
     printf("Launching core1 for CYW43/WiFi/HTTPS...\n");

@@ -257,77 +257,88 @@ static void on_button_event(int idx, bool now_pressed) {
             }
             break;
         case GUI_KEY_CTRL:
-            if (g_view == VIEW_LABS && g_lab_state == LAB_OK && g_lab_count > 0) {
-                const lab_entry_t *sel = &g_labs[g_lab_selected];
-                if (sel->is_radio) {
-                    // Re-press while a radio stream is playing → stop it. We
-                    // use g_tts_play_active as the "stream live" signal
-                    // because tts_start_playback flips it on once headers
-                    // arrive, and the post-cleanup drain flips it back off.
-                    if (g_tts_play_active) {
-                        ic_send(IC_MSG_RADIO_STOP, NULL, 0);
-                        printf("[core0] Enter: stop radio\n");
-                    } else {
-                        // Ship the radio operator's id with the start
-                        // signal so core1 can pin the request body to
-                        // it. Without this the server's default routing
-                        // hijacks the response into a gameserver TTS
-                        // when one is registered for this device.
-                        ic_send(IC_MSG_RADIO_START,
-                                sel->operator_id,
-                                (uint16_t)strlen(sel->operator_id));
-                        printf("[core0] Enter: start radio op=%s\n",
-                               sel->operator_id);
-                    }
-                } else if (sel->is_linephone) {
-                    // Toggle linephone mode. While active, core1 polls
-                    // GET /api/device/linephone/?start=N and Button-B becomes
-                    // push-to-talk (POST /api/device/linephone/).
-                    if (g_linephone_active) {
-                        // Defensive cleanup: if the user is still holding
-                        // B when they stop linephone, mic is in capture
-                        // state. Stop it and resume audio so we don't end
-                        // up with a stuck mic + paused DAC. We deliberately
-                        // do NOT ship IC_MSG_LINEPHONE_POST_END here — the
-                        // session is going away, so the captured fragment
-                        // should just be discarded.
-                        if (mic_is_active()) {
-                            mic_stop();
-                            audio_resume();
-                        }
-                        ic_send(IC_MSG_LINEPHONE_STOP, NULL, 0);
-                        g_linephone_active = false;
-                        g_linephone_lab_id[0] = '\0';
-                        printf("[core0] Enter: stop linephone\n");
-                    } else {
-                        strncpy(g_linephone_lab_id, sel->lab_id,
-                                MAX_LAB_ID_LEN - 1);
-                        g_linephone_lab_id[MAX_LAB_ID_LEN - 1] = '\0';
-                        ic_send(IC_MSG_LINEPHONE_START,
-                                sel->operator_id,
-                                (uint16_t)strlen(sel->operator_id));
-                        g_linephone_active = true;
-                        printf("[core0] Enter: start linephone op=%s lab=%s\n",
-                               sel->operator_id, g_linephone_lab_id);
-                    }
-                } else if (!g_timeline_active) {
-                    strncpy(g_timeline_lab_id, sel->lab_id, MAX_LAB_ID_LEN - 1);
-                    g_timeline_lab_id[MAX_LAB_ID_LEN - 1] = '\0';
-                    const char *op = sel->operator_id;
-                    ic_send(IC_MSG_TIMELINE_START, op, (uint16_t)strlen(op));
-                    g_timeline_active = true;
-                    printf("[core0] Enter: start timeline for lab=%s\n", g_timeline_lab_id);
-                } else {
-                    ic_send(IC_MSG_TIMELINE_STOP, NULL, 0);
-                    g_timeline_active = false;
-                    printf("[core0] Enter: stop timeline\n");
-                }
-                render_lab_list();
-            }
+            lab_enter_action();
             break;
         default:
             break;
     }
+}
+
+//=============================================================================
+// Enter-key action on the selected lab row
+//
+// Factored out of the button dispatcher so the auto-pilot path (single-result
+// lab list, see IC_MSG_LABS_READY in main.c) can drive the exact same Enter
+// behavior without synthesizing a fake button event.
+//=============================================================================
+void lab_enter_action(void) {
+    if (!(g_view == VIEW_LABS && g_lab_state == LAB_OK && g_lab_count > 0)) return;
+
+    const lab_entry_t *sel = &g_labs[g_lab_selected];
+    if (sel->is_radio) {
+        // Re-press while a radio stream is playing → stop it. We
+        // use g_tts_play_active as the "stream live" signal
+        // because tts_start_playback flips it on once headers
+        // arrive, and the post-cleanup drain flips it back off.
+        if (g_tts_play_active) {
+            ic_send(IC_MSG_RADIO_STOP, NULL, 0);
+            printf("[core0] Enter: stop radio\n");
+        } else {
+            // Ship the radio operator's id with the start
+            // signal so core1 can pin the request body to
+            // it. Without this the server's default routing
+            // hijacks the response into a gameserver TTS
+            // when one is registered for this device.
+            ic_send(IC_MSG_RADIO_START,
+                    sel->operator_id,
+                    (uint16_t)strlen(sel->operator_id));
+            printf("[core0] Enter: start radio op=%s\n",
+                   sel->operator_id);
+        }
+    } else if (sel->is_linephone) {
+        // Toggle linephone mode. While active, core1 polls
+        // GET /api/device/linephone/?start=N and Button-B becomes
+        // push-to-talk (POST /api/device/linephone/).
+        if (g_linephone_active) {
+            // Defensive cleanup: if the user is still holding
+            // B when they stop linephone, mic is in capture
+            // state. Stop it and resume audio so we don't end
+            // up with a stuck mic + paused DAC. We deliberately
+            // do NOT ship IC_MSG_LINEPHONE_POST_END here — the
+            // session is going away, so the captured fragment
+            // should just be discarded.
+            if (mic_is_active()) {
+                mic_stop();
+                audio_resume();
+            }
+            ic_send(IC_MSG_LINEPHONE_STOP, NULL, 0);
+            g_linephone_active = false;
+            g_linephone_lab_id[0] = '\0';
+            printf("[core0] Enter: stop linephone\n");
+        } else {
+            strncpy(g_linephone_lab_id, sel->lab_id,
+                    MAX_LAB_ID_LEN - 1);
+            g_linephone_lab_id[MAX_LAB_ID_LEN - 1] = '\0';
+            ic_send(IC_MSG_LINEPHONE_START,
+                    sel->operator_id,
+                    (uint16_t)strlen(sel->operator_id));
+            g_linephone_active = true;
+            printf("[core0] Enter: start linephone op=%s lab=%s\n",
+                   sel->operator_id, g_linephone_lab_id);
+        }
+    } else if (!g_timeline_active) {
+        strncpy(g_timeline_lab_id, sel->lab_id, MAX_LAB_ID_LEN - 1);
+        g_timeline_lab_id[MAX_LAB_ID_LEN - 1] = '\0';
+        const char *op = sel->operator_id;
+        ic_send(IC_MSG_TIMELINE_START, op, (uint16_t)strlen(op));
+        g_timeline_active = true;
+        printf("[core0] Enter: start timeline for lab=%s\n", g_timeline_lab_id);
+    } else {
+        ic_send(IC_MSG_TIMELINE_STOP, NULL, 0);
+        g_timeline_active = false;
+        printf("[core0] Enter: stop timeline\n");
+    }
+    render_lab_list();
 }
 
 void buttons_poll(void) {

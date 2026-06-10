@@ -106,3 +106,8 @@ void render_lab_spinner(uint32_t slow_phase, bool fast_blink_on);
 
 // Trigger a lab-list fetch (sends IC_MSG_BTN_X to core1).
 void trigger_fetch(void);
+
+// Run the Enter-key action on the currently selected lab row. Called both
+// from the button dispatcher (GUI_KEY_CTRL) and from the single-result
+// auto-pilot path in the IC_MSG_LABS_READY handler.
+void lab_enter_action(void);

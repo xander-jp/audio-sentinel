@@ -55,12 +55,12 @@ INCLUDE_DIRECTORIES(
   ${CMAKE_CURRENT_LIST_DIR}/inc/
   ${CMAKE_CURRENT_LIST_DIR}/../inc/
   ${CMAKE_BINARY_DIR}/
-  ${CMAKE_CURRENT_LIST_DIR}/../../../third_party/cJSON/
+  ${CMAKE_CURRENT_LIST_DIR}/../vendor/cJSON/
 )
 
 ADD_EXECUTABLE(
     ${PRJ}
-    ${CMAKE_CURRENT_LIST_DIR}/../../../third_party/cJSON/cJSON.c
+    ${CMAKE_CURRENT_LIST_DIR}/../vendor/cJSON/cJSON.c
     ${CMAKE_CURRENT_LIST_DIR}/../src/st7789.c
     ${CMAKE_CURRENT_LIST_DIR}/../src/audio.c
     ${CMAKE_CURRENT_LIST_DIR}/../src/ic_ring.c

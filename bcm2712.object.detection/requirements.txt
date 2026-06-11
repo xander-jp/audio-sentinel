@@ -1,0 +1,7 @@
+# pip dependencies for the Pi 5 detection script (installed into the venv).
+#
+# picamera2 / libcamera are intentionally excluded -- the apt build
+# (python3-picamera2) is used via system-site-packages. See setup.sh.
+ultralytics>=8.3.0      # includes YOLO11 / YOLO12
+opencv-python>=4.10     # with imshow GUI (not the headless build)
+# torch / torchvision are pulled in automatically by ultralytics (ARM64 CPU build)

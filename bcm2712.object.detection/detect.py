@@ -150,11 +150,30 @@ def load_model(args: argparse.Namespace):
 
     model_path = args.model
     if args.ncnn:
-        # Export the .pt to an NCNN dir (e.g. yolo12n_ncnn_model) if missing
-        ncnn_dir = Path(model_path).with_suffix("").as_posix() + "_ncnn_model"
+        # NCNN bakes the input size into the graph at export time -- passing a
+        # different --imgsz at predict time does NOT change it (and can even be
+        # slower). So each size gets its own export dir, e.g.
+        # yolo12n_320_ncnn_model, and --imgsz actually takes effect.
+        #
+        # This matters a lot on the Pi 5 CPU: native-320 is ~4-6x faster than
+        # 640 (e.g. yolo12n 5.6 -> 32 FPS, yolo11n 11 -> 43 FPS), which is the
+        # difference between 3 FPS and clearing 30 FPS.
+        stem = Path(model_path).with_suffix("").as_posix()
+        ncnn_dir = f"{stem}_{args.imgsz}_ncnn_model"
+        # Migrate a legacy size-agnostic 640 export if present.
+        legacy_dir = f"{stem}_ncnn_model"
+        if (args.imgsz == 640 and Path(legacy_dir).exists()
+                and not Path(ncnn_dir).exists()):
+            ncnn_dir = legacy_dir
         if not Path(ncnn_dir).exists():
-            print(f"[info] exporting {model_path} to NCNN (first run only) ...")
+            print(f"[info] exporting {model_path} to NCNN at imgsz={args.imgsz} "
+                  f"(first run for this size only) ...")
             YOLO(model_path).export(format="ncnn", imgsz=args.imgsz)
+            # Ultralytics always writes <stem>_ncnn_model; rename to the
+            # size-specific dir so multiple sizes can coexist.
+            written = Path(legacy_dir)
+            if written.exists() and ncnn_dir != legacy_dir:
+                written.rename(ncnn_dir)
         print(f"[info] loading NCNN model: {ncnn_dir}")
         return YOLO(ncnn_dir, task="detect")
 

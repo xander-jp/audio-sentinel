@@ -63,6 +63,29 @@
 static wifi_creds_t g_wifi_creds;
 
 //=============================================================================
+// opus memory layout on RP2350 (settled design; git 2936d8b has the journey —
+// it prevents an encode stack OVERFLOW, a boot OOM, and a playback OOM).
+//
+//   high | __StackTop
+//        | core0 stack       encode hiwater ~3.6 KB  (was >=23.5 KB as VLAs)
+//   ~~~~ + ~~~~~~~~ __StackBottom == __HeapLimit
+//        | newlib heap ~56 KB   shared: cyw43 / lwIP / mbedtls + opus codec
+//        + ----------------
+//        | BSS
+//        | g_opus_scratch 24 KB   <- opus SILK/CELT scratch lives HERE,
+//   low  |                           off the stack
+//
+// Invariants — break any one and it regresses to a crash:
+//   1. opus is built NONTHREADSAFE_PSEUDOSTACK, not VAR_ARRAYS — scratch in
+//      the BSS buffer above, not VLAs on this stack. (cmake.rp2350)
+//   2. GLOBAL_STACK_SIZE (cmake -D) == OPUS_SCRATCH_BYTES (opus_scratch.h),
+//      both 24576. Mismatch -> opus writes past the canary -> BSS corruption.
+//   3. mic encoder (~29 KB) and stream decoder (~18 KB) never coexist on the
+//      heap: half-duplex PTT frees one before opening the other (mic.c /
+//      opus_stream.c). Peak heap = 38 KB playback, 49 KB record, both < 56 KB.
+//=============================================================================
+
+//=============================================================================
 // STACKDIAG — measurement-only instrumentation (no behavior change).
 //
 // Goal: pick a core0 stack size that fits the opus ENCODER (mic) without
@@ -75,11 +98,13 @@ static wifi_creds_t g_wifi_creds;
 //   (C) core0 stack high-water via canary paint — stackdiag_paint/hiwater()
 //=============================================================================
 #define STACK_CANARY 0xC5C5C5C5u
-// How far BELOW __StackBottom the canary paint extends. The 16 KB stack
-// region pegged at hiwater=16384/16384 during mic encode (opus is built
-// with VAR_ARRAYS — all SILK scratch is VLAs on the caller's stack), so
-// the real peak is somewhere past the bottom. The area below is the newlib
-// heap's growth gap (break was 84 KB below __StackBottom at net-ready);
+// How far BELOW __StackBottom the canary paint extends. Historically the
+// stack region pegged at hiwater=16384/16384 during mic encode (opus was
+// then built with VAR_ARRAYS — all SILK scratch was VLAs on the caller's
+// stack; now NONTHREADSAFE_PSEUDOSTACK, see banner above, so encode peaks
+// at ~3.6 KB), so the real peak was somewhere past the bottom. The area
+// below is the newlib heap's growth gap (break was 84 KB below
+// __StackBottom at net-ready);
 // painting its top 16 KB is safe as long as the break never climbs that
 // high — stackdiag checks sbrk(0) at paint and scan time and degrades to
 // the in-region measurement if it does. This measures the overflow depth

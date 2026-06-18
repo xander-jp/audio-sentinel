@@ -3,7 +3,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "pico/stdlib.h"
 #include "opus.h"
+#include "opus_scratch.h"
 
 // Default rate for opus_stream_init() — chosen low so the boot-time
 // decoder allocation matches the radio path (which dominates uptime).
@@ -48,11 +50,28 @@ void opus_stream_reset(void) {
     }
 }
 
+void opus_stream_free(void) {
+    // Destroy the decoder and hand its ~18 KB of newlib heap back. The mic
+    // push-to-talk path calls this (receive is paused while talking) so the
+    // encoder and decoder never both occupy the heap. opus_stream_decode_frame
+    // re-creates the decoder lazily on the next decode after audio_resume().
+    if (g_decoder) {
+        opus_decoder_destroy(g_decoder);
+        g_decoder    = NULL;
+        g_decoder_sr = 0;
+    }
+}
+
 int opus_stream_decode_frame(const uint8_t *packet, size_t packet_len,
                               int16_t *pcm_out, int pcm_max) {
     if (!g_decoder && opus_stream_init() != 0) return -1;
     int n = opus_decode(g_decoder, packet, (int32_t)packet_len,
                         pcm_out, pcm_max, 0);
+    if (!opus_scratch_canary_ok()) {
+        // opus overran its BSS pseudostack (see src/opus_scratch.c) — adjacent
+        // BSS is already corrupt, so reset rather than play garbage.
+        panic("[opus] pseudostack overflow");
+    }
     if (n < 0) {
         printf("[opus] decode err=%d (pkt=%u)\n", n, (unsigned)packet_len);
     }

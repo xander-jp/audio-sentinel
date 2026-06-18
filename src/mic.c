@@ -9,6 +9,8 @@
 #include "hardware/gpio.h"
 #include "i2s_in.pio.h"
 #include "opus.h"
+#include "opus_scratch.h"
+#include "opus_stream.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -77,6 +79,7 @@ static int          g_mic_sm        = -1;
 static int          g_mic_dma_ch    = -1;
 static uint         g_mic_pio_off   = 0;
 static OpusEncoder *g_mic_enc       = NULL;
+static bool         g_mic_inited    = false;
 static volatile bool g_mic_active   = false;
 
 // PCM accumulator: PIO produces stereo words; we collect 16-bit mono samples
@@ -146,16 +149,15 @@ static inline uint32_t mic_dma_produced_abs(void) {
 //=============================================================================
 // Init
 //=============================================================================
-int mic_init(void) {
+
+// Create + configure the opus encoder. Deferred out of mic_init() and into
+// mic_start() so the ~29 KB encoder state only occupies the newlib heap while
+// the mic is actually recording. During playback that same RAM is needed by
+// the opus decoder (~18 KB) plus the mbedtls TLS context — on this RP2350 the
+// heap (~56 KB) cannot hold encoder + decoder + TLS at once, which is why a
+// boot-time encoder made the first TTS playback OOM.
+static int mic_encoder_open(void) {
     if (g_mic_enc) return 0;
-    printf("[mic] init begin\n");
-
-    memset(g_mic_ring, 0, sizeof g_mic_ring);
-
-    g_mic_sm      = pio_claim_unused_sm(MIC_PIO, true);
-    g_mic_pio_off = pio_add_program(MIC_PIO, &i2s_in_program);
-    g_mic_dma_ch  = dma_claim_unused_channel(true);
-
     int err = OPUS_OK;
     g_mic_enc = opus_encoder_create(MIC_SAMPLE_RATE_HZ, 1,
                                     OPUS_APPLICATION_VOIP, &err);
@@ -174,13 +176,33 @@ int mic_init(void) {
     // Tried NARROWBAND here hoping to shrink SILK's VAR_ARRAYS stack VLAs:
     // no effect (encode peak 18,744 B WB cap vs 18,912 B NB cap, stackdiag
     // measured) — at 8 kbps CBR the encoder already picks NB internally,
-    // so neither cap binds. The real fix is the 20 KB core0 stack
-    // (memmap_bigstack.ld annexes SCRATCH_X).
+    // so neither cap binds.
     opus_encoder_ctl(g_mic_enc, OPUS_SET_MAX_BANDWIDTH(OPUS_BANDWIDTH_WIDEBAND));
+    return 0;
+}
 
-    printf("[mic] ready: pio=%p sm=%d dma_ch=%d enc=%p (16k mono VOIP %d bps) "
-           "heap=%d B\n",
-           (void*)MIC_PIO, g_mic_sm, g_mic_dma_ch, (void*)g_mic_enc,
+static void mic_encoder_close(void) {
+    if (g_mic_enc) {
+        opus_encoder_destroy(g_mic_enc);
+        g_mic_enc = NULL;
+    }
+}
+
+int mic_init(void) {
+    if (g_mic_inited) return 0;
+    printf("[mic] init begin\n");
+
+    memset(g_mic_ring, 0, sizeof g_mic_ring);
+
+    g_mic_sm      = pio_claim_unused_sm(MIC_PIO, true);
+    g_mic_pio_off = pio_add_program(MIC_PIO, &i2s_in_program);
+    g_mic_dma_ch  = dma_claim_unused_channel(true);
+    g_mic_inited  = true;
+
+    // The encoder is opened on demand in mic_start() (push-to-talk), not here.
+    printf("[mic] ready: pio=%p sm=%d dma_ch=%d (16k mono VOIP %d bps) "
+           "enc deferred (get_size=%d B, opened on PTT)\n",
+           (void*)MIC_PIO, g_mic_sm, g_mic_dma_ch,
            MIC_OPUS_BITRATE, opus_encoder_get_size(1));
     return 0;
 }
@@ -206,14 +228,24 @@ static void mic_apply_clkdiv(void) {
 }
 
 void mic_start(void) {
-    if (!g_mic_enc) {
+    if (!g_mic_inited) {
         printf("[mic] start: not initialized\n");
         return;
     }
     if (g_mic_active) return;
 
-    // Reset encoder + accumulator
-    opus_encoder_ctl(g_mic_enc, OPUS_RESET_STATE);
+    // Half-duplex push-to-talk: gui.c has already audio_pause()'d the receive
+    // path, so the opus decoder is idle. Free it to return ~18 KB to the heap
+    // before allocating the ~29 KB encoder — they never run at once, and the
+    // heap can't hold both plus the TLS context. opus_stream re-creates the
+    // decoder lazily on the next decode after audio_resume().
+    opus_stream_free();
+    if (mic_encoder_open() != 0) {
+        printf("[mic] start: encoder open failed\n");
+        return;
+    }
+
+    // Fresh encoder is already reset; just clear the PCM accumulator.
     g_mic_pcm_acc_len   = 0;
 
     // Reset PCM diagnostics for this recording.
@@ -310,6 +342,12 @@ void mic_stop(void) {
            (unsigned long)g_mic_dbg_n, (unsigned long)loss,
            (unsigned long)g_mic_pump_max_gap, (unsigned long)g_mic_overruns,
            (unsigned)(MIC_RING_WORDS / 32u));
+
+    // Release the ~29 KB encoder so the heap is free for the decoder + TLS
+    // when audio_resume() brings the receive path back. Safe here: g_mic_active
+    // is already false and the pump runs on this same core, so no frame can be
+    // encoding. opened again on the next mic_start().
+    mic_encoder_close();
 }
 
 //=============================================================================
@@ -319,6 +357,11 @@ static void mic_ship_frame(void) {
     uint8_t pkt[MIC_OPUS_MAX_PKT];
     opus_int32 n = opus_encode(g_mic_enc, g_mic_pcm_acc,
                                 MIC_FRAME_SAMPLES, pkt, sizeof pkt);
+    if (!opus_scratch_canary_ok()) {
+        // opus overran its BSS pseudostack (see src/opus_scratch.c) and has
+        // corrupted adjacent BSS — bail loudly rather than ship garbage.
+        panic("[mic] opus pseudostack overflow");
+    }
     if (n <= 0) {
         printf("[mic] opus_encode err=%ld (frame skipped)\n", (long)n);
         return;

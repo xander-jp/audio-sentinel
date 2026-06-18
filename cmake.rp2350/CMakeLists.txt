@@ -13,8 +13,8 @@ SET(CMAKE_CXX_STANDARD 17)
 
 # pico_sdk_init must be called early, right after project()
 pico_sdk_init()
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -g")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1 -g")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O1 -g")
 
 # Include stdint.h/stddef.h for C/CXX only (not for assembler)
 add_compile_options(
@@ -46,7 +46,38 @@ ENDIF()
 SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(OPUS_FIXED_POINT ON CACHE BOOL "OPUS_FIXED_POINT")
+
+# Build opus with a global pseudostack instead of VLAs. With VAR_ARRAYS the
+# SILK/CELT codec scratch lived on core0's hardware stack; encode peaked at
+# ~18.9 KB and, with IRQ nesting on top, the measured high-water (≥23.5 KB)
+# was punching past __StackBottom toward the live newlib heap (cyw43/lwIP/
+# mbedtls). NONTHREADSAFE_PSEUDOSTACK moves that scratch off the call stack
+# into one global buffer we supply from BSS (see src/opus_scratch.c), so the
+# hardware-stack peak collapses to a few KB. Safe with a single, non-reentrant
+# pseudostack because both opus entry points run sequentially on core0's main
+# loop: opus_encode (mic_ship_frame) and opus_decode (opus_stream_decode_frame)
+# — never nested, never from an IRQ. These cache vars cascade through opus's
+# cmake_dependent_option chain to force OPUS_VAR_ARRAYS / OPUS_USE_ALLOCA off.
+set(OPUS_NONTHREADSAFE_PSEUDOSTACK ON  CACHE BOOL "" FORCE)
+set(OPUS_VAR_ARRAYS               OFF CACHE BOOL "" FORCE)
+set(OPUS_USE_ALLOCA               OFF CACHE BOOL "" FORCE)
+
 add_subdirectory(${OPUS_PATH} build/opus)
+
+# Point opus's pseudostack at our fixed BSS buffer rather than malloc():
+#  - OVERRIDE_OPUS_ALLOC_SCRATCH suppresses os_support.h's malloc-backed
+#    opus_alloc_scratch; src/opus_scratch.c provides the BSS-backed one.
+#  - GLOBAL_STACK_SIZE must equal OPUS_SCRATCH_BYTES (inc/opus_scratch.h) so
+#    opus never believes it has more room than the buffer holds.
+#  - The force-included header gives opus's 32 TUs the prototype that
+#    os_support.h no longer emits once the override is set.
+target_compile_definitions(opus PRIVATE
+    OVERRIDE_OPUS_ALLOC_SCRATCH
+    GLOBAL_STACK_SIZE=24576
+)
+target_compile_options(opus PRIVATE
+    -include ${CMAKE_CURRENT_LIST_DIR}/../inc/opus_scratch.h
+)
 
 INCLUDE_DIRECTORIES(".")
 
@@ -71,6 +102,7 @@ ADD_EXECUTABLE(
     ${CMAKE_CURRENT_LIST_DIR}/../src/gui.c
     ${CMAKE_CURRENT_LIST_DIR}/../src/tts.c
     ${CMAKE_CURRENT_LIST_DIR}/../src/opus_stream.c
+    ${CMAKE_CURRENT_LIST_DIR}/../src/opus_scratch.c
     ${CMAKE_CURRENT_LIST_DIR}/../src/credentials.c
     ${CMAKE_CURRENT_LIST_DIR}/../src/ble_provision.c
     ${CMAKE_CURRENT_LIST_DIR}/../src/mic.c
@@ -132,13 +164,16 @@ target_compile_definitions(${PRJ} PRIVATE
     # but never writes flash, so the assume-safe path is correct there too.
     PICO_FLASH_ASSUME_CORE1_SAFE=1
     # Core 0's stack: 20 KB ending at the top of SCRATCH_X (see
-    # memmap_bigstack.ld). opus is built with VAR_ARRAYS, so codec scratch
-    # is VLAs on the caller's stack; measured peaks (stackdiag canary):
-    # decode 4,864 B, encode 18,912 B — past the old 16 KB region.
-    # __StackBottom stays at 0x2007c000, so the extra 4 KB comes from the
-    # annexed SCRATCH_X bank, NOT the newlib heap (whose break high-water
-    # already ratchets to 8 KB below the bottom; lowering __StackBottom
-    # is what made PICO_STACK_SIZE=0x6000 kill WiFi in the past).
+    # memmap_bigstack.ld). opus now builds with NONTHREADSAFE_PSEUDOSTACK, so
+    # codec scratch no longer lives here — it moved to the BSS pseudostack in
+    # src/opus_scratch.c. The old VAR_ARRAYS peaks that forced this size
+    # (decode 4,864 B, encode 18,912 B, plus IRQ nesting ≥23.5 KB punching
+    # toward the heap) are gone; the hardware-stack high-water should now sit
+    # at a few KB. Value kept at 0x5000 for this change so the pseudostack
+    # move is the only variable; once the stackdiag canary confirms the new
+    # (much lower) peak, this can drop back toward the SDK default and return
+    # the annexed SCRATCH_X bank. NB: lowering __StackBottom is what made
+    # PICO_STACK_SIZE=0x6000 kill WiFi before — shrink, don't grow.
     PICO_STACK_SIZE=0x5000
     # Core 1's 4 KB stack lives in SCRATCH_Y (was SCRATCH_X, now annexed
     # by core0) — without this override PICO_CORE1_STACK_SIZE inherits

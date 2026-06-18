@@ -38,6 +38,11 @@ int  opus_stream_set_rate(uint32_t hz);
 // start of each new TTS playback.
 void opus_stream_reset(void);
 
+// Destroy the decoder entirely, returning its ~18 KB of heap. The decoder is
+// re-created lazily on the next opus_stream_decode_frame(). Used by the mic
+// push-to-talk path so the encoder and decoder never coexist on the heap.
+void opus_stream_free(void);
+
 // Decode a single opus packet. Returns the number of decoded samples
 // (mono int16), or a negative opus error code on failure.
 int  opus_stream_decode_frame(const uint8_t *packet, size_t packet_len,

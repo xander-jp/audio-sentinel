@@ -201,29 +201,46 @@ void trigger_fetch(void) {
 //=============================================================================
 // Button event dispatch
 //=============================================================================
+// Stop push-to-talk capture. do_post=true → finalize + upload the accumulated
+// audio (POST_END); false → tell core1 to drop it (DISCARD), e.g. when the
+// talk was too short to be worth posting. mic_stop() ships no trailing packet,
+// so the DISCARD lands after every OPUS_PKT and resets cleanly. Resumes the
+// receive playback either way. No-op outside linephone mode.
+void gui_ptt_stop(bool do_post) {
+    if (!g_linephone_active) return;
+    mic_stop();
+    ic_send(do_post ? IC_MSG_LINEPHONE_POST_END
+                    : IC_MSG_LINEPHONE_DISCARD, NULL, 0);
+    audio_resume();
+}
+
+// Button-B (push-to-talk). Factored out so both the button dispatcher and the
+// sonar proximity trigger (main.c) drive the identical mic ON/OFF path.
+void gui_button_b(bool now_pressed) {
+    if (g_linephone_active) {
+        // Push-to-talk inside linephone mode: pause receive while talking
+        // so the mic capture isn't drowned out by the speaker. The ring +
+        // upstream pipeline are preserved — audio_resume() on release
+        // picks up where DMA left off (catch-up artifact: up to a ring's
+        // worth of buffered audio replays before catching live).
+        if (now_pressed) {
+            audio_pause();
+            mic_start();
+        } else {
+            gui_ptt_stop(true);   // manual button always posts
+        }
+    } else if (now_pressed) {
+        // Legacy / backward-compatible: outside linephone mode B just
+        // stops in-flight audio output.
+        audio_stop();
+    }
+}
+
 static void on_button_event(int idx, bool now_pressed) {
     // Button-B is push-to-talk: it needs BOTH press (start mic) and release
     // (stop + post-end). Every other button only acts on press.
     if (idx == GUI_BTN_B) {
-        if (g_linephone_active) {
-            // Push-to-talk inside linephone mode: pause receive while talking
-            // so the mic capture isn't drowned out by the speaker. The ring +
-            // upstream pipeline are preserved — audio_resume() on release
-            // picks up where DMA left off (catch-up artifact: up to a ring's
-            // worth of buffered audio replays before catching live).
-            if (now_pressed) {
-                audio_pause();
-                mic_start();
-            } else {
-                mic_stop();
-                ic_send(IC_MSG_LINEPHONE_POST_END, NULL, 0);
-                audio_resume();
-            }
-        } else if (now_pressed) {
-            // Legacy / backward-compatible: outside linephone mode B just
-            // stops in-flight audio output.
-            audio_stop();
-        }
+        gui_button_b(now_pressed);
         return;
     }
 

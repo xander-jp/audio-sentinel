@@ -97,6 +97,16 @@ uint32_t gui_status_version(void);
 void buttons_init(void);
 void buttons_poll(void);
 
+// Button-B (push-to-talk) action, factored out of the button dispatcher so the
+// sonar proximity trigger in main.c can drive the exact same mic ON/OFF path.
+// now_pressed=true → press (mic start), false → release (mic stop + POST_END).
+void gui_button_b(bool now_pressed);
+
+// Stop push-to-talk explicitly, choosing whether to upload. do_post=false
+// drops the capture on core1 (used by the sonar trigger when the talk was
+// shorter than the minimum worth posting). No-op outside linephone mode.
+void gui_ptt_stop(bool do_post);
+
 void render_status_view(void);
 void render_buttons_view(void);
 void render_lab_loading(void);

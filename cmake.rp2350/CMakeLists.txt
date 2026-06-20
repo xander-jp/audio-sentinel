@@ -107,11 +107,13 @@ ADD_EXECUTABLE(
     ${CMAKE_CURRENT_LIST_DIR}/../src/ble_provision.c
     ${CMAKE_CURRENT_LIST_DIR}/../src/mic.c
     ${CMAKE_CURRENT_LIST_DIR}/../src/linephone.c
+    ${CMAKE_CURRENT_LIST_DIR}/../src/hc_sr04.c
     ${CMAKE_CURRENT_LIST_DIR}/../main.c
 )
 
 pico_generate_pio_header(${PRJ} ${CMAKE_CURRENT_LIST_DIR}/../src/i2s.pio)
 pico_generate_pio_header(${PRJ} ${CMAKE_CURRENT_LIST_DIR}/../src/i2s_in.pio)
+pico_generate_pio_header(${PRJ} ${CMAKE_CURRENT_LIST_DIR}/../src/hc_sr04.pio)
 
 # Compile the BLE provisioning GATT description into a C header
 # (generates `wifi_provision.h` in the build dir, with profile_data[] and

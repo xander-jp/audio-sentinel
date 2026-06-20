@@ -35,8 +35,11 @@
 //     gritty/hissy on echo playback; 16 kbps is SILK's comfortable floor
 //     for WB voice). NOTE: halves the max PTT take vs 8 kbps —
 //     LP_OPUS_CAP (12 KB) now fills in ~5.6 s; [lp/accum] logs drops.
-//   - complexity 0 → cheapest CPU (do NOT raise: core0 stack hiwater is
-//     18,912/20,480 B during encode — only ~1.5 KB headroom)
+//   - complexity 0 → cheapest CPU (do NOT raise: encode already runs right
+//     at realtime for 16 kHz/16 kbps on dense frames — see main.c. Stack is
+//     no longer the limiter — codec scratch moved off the HW stack into the
+//     BSS pseudostack (src/opus_scratch.c), so the encode stack hiwater is
+//     now ~3.6 KB, not the old 18,912 B; CPU is what binds complexity now.)
 //=============================================================================
 #define MIC_OPUS_BITRATE     16000
 #define MIC_OPUS_COMPLEXITY  0

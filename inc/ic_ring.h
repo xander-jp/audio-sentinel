@@ -42,6 +42,7 @@ typedef enum {
     IC_MSG_LINEPHONE_POST_END = 0x29,  // capture done → base64+POST accumulator
     IC_MSG_LINEPHONE_START    = 0x2A,  // payload = operator_id (enter mode)
     IC_MSG_LINEPHONE_STOP     = 0x2B,  // leave linephone mode
+    IC_MSG_LINEPHONE_DISCARD  = 0x2C,  // capture done but too short → drop accumulator (no POST)
 
     // --- Core1 → Core0 status / data messages ---
     IC_MSG_LABS_READY     = 0x30,  // labs JSON parsed, g_labs[] populated

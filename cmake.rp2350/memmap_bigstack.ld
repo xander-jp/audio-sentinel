@@ -3,7 +3,7 @@
  *
  * What this changes vs. SDK pico_crt0/rp2350/memmap_default.ld:
  *   - .stack_dummy now lives in RAM, not SCRATCH_Y. PICO_STACK_SIZE
- *     (set to 16 KB in CMakeLists.txt) is taken from the BSS budget.
+ *     (set to 20 KB / 0x5000 in CMakeLists.txt) is taken from the BSS budget.
  *   - __StackTop / __StackBottom are computed from RAM, not SCRATCH_Y.
  *   - __HeapLimit shrinks to __StackBottom so sbrk() can't grow into
  *     the relocated stack region.
@@ -16,8 +16,12 @@
  *
  * Core1's stack (.stack1_dummy, 4 KB) lives in SCRATCH_Y; SCRATCH_X is
  * annexed by core0's stack (physically contiguous with RAM top), giving
- * core0 20 KB (0x2007c000..0x20081000) at zero heap cost — opus_encode
- * peaks at 18,912 B measured. Core1 no longer runs opus_decode.
+ * core0 20 KB (0x2007c000..0x20081000) at zero heap cost. The 20 KB was
+ * sized for the old VAR_ARRAYS build, where opus_encode peaked at 18,912 B
+ * on this stack; codec scratch has since moved to the BSS pseudostack
+ * (src/opus_scratch.c), so the live HW-stack peak is now a few KB and the
+ * size is kept conservatively (see CMakeLists.txt). Core1 no longer runs
+ * opus_decode.
  */
 
 MEMORY
@@ -224,9 +228,11 @@ SECTIONS
      * RAM, so annexing it buys 4 KB of stack WITHOUT lowering
      * __StackBottom — i.e. zero cost to the newlib heap, whose break
      * high-water (0x2007a000 measured) already sits only 8 KB below.
-     * Needed because opus_encode (SILK, VAR_ARRAYS) peaks core0's stack
-     * at 18,912 B measured — past the previous 16 KB region. Heap grows
-     * up from __end__ toward __StackBottom; the ASSERT below catches
+     * Sized for the old VAR_ARRAYS build, where opus_encode peaked core0's
+     * stack at 18,912 B — past the previous 16 KB region. That scratch now
+     * lives in the BSS pseudostack (src/opus_scratch.c), so the live peak is
+     * a few KB; the annex is retained for headroom (see CMakeLists.txt). Heap
+     * grows up from __end__ toward __StackBottom; the ASSERT below catches
      * collisions at link time. */
     .stack_dummy (NOLOAD):
     {

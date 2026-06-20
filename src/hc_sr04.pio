@@ -1,0 +1,84 @@
+; HC-SR04 ultrasonic range finder — everything but the cm conversion runs here.
+;
+; Pin assignments (flexible, need not be consecutive):
+;   set 1 bit → TRIG  (GP18 on this board) — PIO drives the 10 µs trigger pulse
+;   jmp pin   → ECHO  (GP19 on this board, AFTER the 5V→3.3V divider) — PIO times it
+;
+; Protocol per measurement:
+;   1. CPU writes a timeout (in µs-counts) to the TX FIFO → starts one ping.
+;   2. PIO emits a ~10 µs HIGH pulse on TRIG.
+;   3. PIO waits for ECHO's rising edge (timeout-guarded).
+;   4. PIO counts how long ECHO stays HIGH (timeout-guarded).
+;   5. PIO pushes the REMAINING countdown value to the RX FIFO.
+;      CPU computes elapsed_us = TIMEOUT - remaining;  a pushed 0 means
+;      "no echo / out of range".
+;
+; Timing: both the rise-wait loop and the HIGH-width loop are exactly 2 PIO
+; instructions per countdown step. Run the SM at 2 MHz (see init) so 2 instr =
+; 1 µs, i.e. one countdown step == 1 µs. That keeps elapsed_us in plain µs and
+; survives the 200 MHz overclock because the divider is derived from clk_sys.
+
+.program hc_sr04
+
+.wrap_target
+    pull block                  ; OSR = timeout (µs); blocks until CPU requests a ping
+
+    ; ---- ~10 µs trigger pulse on the SET pin (TRIG) ----
+    set pins, 1                 ; TRIG high
+    set y, 19                   ; 20 iters × 0.5 µs (@2 MHz) = 10 µs
+trig_delay:
+    jmp y-- trig_delay
+    set pins, 0                 ; TRIG low
+
+    ; ---- wait for ECHO rising edge, X = timeout countdown ----
+    mov x, osr
+wait_rise:
+    jmp pin, measure_init       ; ECHO high → start timing
+    jmp x-- wait_rise           ; else count down; fall through when it expires
+    jmp report_norise           ; ECHO never rose → no-signal sentinel
+
+measure_init:
+    mov x, osr                  ; reload timeout for the HIGH-width measurement
+measure:
+    jmp pin, still_high         ; ECHO still high?
+    jmp report                  ; ECHO went low → done, X = remaining (>=2 in practice)
+still_high:
+    jmp x-- measure             ; count down while high; fall through if stuck high
+
+; --- Two distinct failure sentinels so the CPU can tell the modes apart ---
+; (X has just wrapped to 0xFFFFFFFF on either timeout fall-through, so each path
+;  reloads a small sentinel before `in x`.)
+report_stuck:
+    set x, 1                    ; 1 = ECHO STUCK HIGH (measure timed out)
+    jmp report
+report_norise:
+    set x, 0                    ; 0 = ECHO never rose (wait_rise timed out)
+report:
+    in x, 32                    ; ISR = X (remaining countdown, or sentinel)
+    push noblock                ; → RX FIFO (drop if CPU fell behind, keep freshest)
+.wrap
+
+% c-sdk {
+#include "hardware/clocks.h"
+
+static inline void hc_sr04_program_init(PIO pio, uint sm, uint offset,
+                                        uint trig_pin, uint echo_pin) {
+    pio_gpio_init(pio, trig_pin);
+    pio_gpio_init(pio, echo_pin);
+    // TRIG is driven by PIO (output); ECHO is read by PIO (input).
+    pio_sm_set_consecutive_pindirs(pio, sm, trig_pin, 1, /*is_out=*/true);
+    pio_sm_set_consecutive_pindirs(pio, sm, echo_pin, 1, /*is_out=*/false);
+
+    pio_sm_config c = hc_sr04_program_get_default_config(offset);
+    sm_config_set_set_pins(&c, trig_pin, 1);   // SET pins → TRIG
+    sm_config_set_jmp_pin(&c, echo_pin);        // JMP PIN tests ECHO
+
+    // 2 PIO instr per countdown step → run at 2 MHz so one step == 1 µs.
+    // Derived from the live sys clock so the 200 MHz overclock doesn't skew it.
+    float div = (float)clock_get_hz(clk_sys) / 2000000.0f;
+    sm_config_set_clkdiv(&c, div);
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);          // parks on `pull block` until first ping
+}
+%}

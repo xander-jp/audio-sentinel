@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>   // sbrk(0) — newlib heap break probe (stackdiag)
+#include <math.h>     // fabsf — sonar change-threshold logging
 
 #include "pico/stdlib.h"
 #include "hardware/uart.h"
@@ -38,6 +39,7 @@
 #include "ble_provision.h"
 #include "mic.h"
 #include "linephone.h"
+#include "hc_sr04.h"
 
 //=============================================================================
 // Configuration — only API_URL stays at build time; WiFi creds *and*
@@ -56,11 +58,45 @@
 
 #define TIMELINE_POLL_INTERVAL_MS 10000
 
+// HC-SR04 ultrasonic range finder. TRIG=GP6, ECHO=GP7 (after the 5V→3.3V
+// divider). GP18/GP19 were NOT usable: they are the Waveshare board's Key-Down
+// and Button-X (src/gui.c g_buttons[]), wired as polled pull-up inputs — the
+// pull-up held ECHO high and the trigger pulses faked button presses. GP6/GP7
+// are free (UART=0/1, joy/btn=2/3/15/17/18/19, LCD=8-13, mic=16/20/21,
+// audio-out=26-28). Driven entirely by PIO (src/hc_sr04.pio) on pio1 — pio0
+// holds the mic, pio2 holds CYW43 PIO-SPI + audio out. One ping every 100 ms.
+#define SONAR_PIO          pio1
+#define SONAR_TRIG_PIN     6
+#define SONAR_ECHO_PIN     7
+#define SONAR_PING_INTERVAL_MS 100
+#define SONAR_LOG_DELTA_CM     2.0f   // only log a valid reading when it moves this much
+// Capture LED: lit while the sonar push-to-talk mic is ACTIVE (object within
+// SONAR_NEAR_CM), and dark once the 3 s auto-POST forces the mic OFF — it does
+// NOT track raw proximity, so a lingering object won't keep it lit. Driven by
+// the mic SM near the bottom of the loop, not the ping block.
+// Plain GPIO (active-high), NOT the CYW43 onboard LED — wire GP5 → ~330Ω →
+// LED(+) → LED(−) → GND. GP5 is free (sonar uses GP6/GP7; see pin map above).
+#define SONAR_LED_PIN          5
+#define SONAR_NEAR_CM          10.0f
+// Sonar proximity push-to-talk: while an object is within SONAR_NEAR_CM the
+// mic runs exactly like a held Button-B (gui_button_b). Capped at
+// SONAR_MIC_MAX_MS (forced ON→OFF even if still near), then a
+// SONAR_MIC_COOLDOWN_MS lockout before it can re-trigger.
+#define SONAR_MIC_MAX_MS       3000
+#define SONAR_MIC_COOLDOWN_MS  1000
+// Only POST the capture if the mic stayed on at least this long; shorter
+// blips are discarded (no upload) so a quick swipe past the sensor is ignored.
+#define SONAR_MIC_MIN_POST_MS  1000
+
 //=============================================================================
 // Runtime WiFi credentials — loaded from flash by core0 main(), consumed by
 // core1's network_init() once both cores are up.
 //=============================================================================
 static wifi_creds_t g_wifi_creds;
+
+// HC-SR04 range finder handle (PIO1). Initialized in on_core0_audio_beep_play,
+// pinged/read each main-loop pass in on_core0_running.
+static hc_sr04_t g_sonar;
 
 //=============================================================================
 // opus memory layout on RP2350 (settled design; git 2936d8b has the journey —
@@ -156,6 +192,15 @@ static size_t stackdiag_hiwater(void) {
 // break, so this never allocates — important because pico_malloc's wrapper
 // (PICO_MALLOC_PANIC, default ON) panics on a failed malloc, so probing the
 // limit with real allocations would itself be the OOM crash.
+// Upper bound on what a single fresh malloc can still get: how far the break
+// can rise toward __HeapLimit. Same figure stackdiag_heap_report() prints; the
+// linephone poll uses it to refuse a TLS handshake it can't afford (see
+// LP_POLL_MIN_GROWABLE_B). Free-list holes below the break may allow a bit
+// more, so this errs on the safe (skip) side.
+static size_t heap_growable(void) {
+    return (size_t)((uintptr_t)__HeapLimit - (uintptr_t)sbrk(0));
+}
+
 static void stackdiag_heap_report(const char *when) {
     uintptr_t brk      = (uintptr_t)sbrk(0);
     size_t    growable = (size_t)((uintptr_t)__HeapLimit - brk);
@@ -226,6 +271,14 @@ static bool     g_core1_lp_session_active = false;
 // pressing B to record collides with in-flight RX (audio PAUSE/RESUME +
 // throttled drain). 10 s leaves silent gaps so recording lands in silence.
 #define LP_POLL_INTERVAL_MS  10000
+// Heap headroom a poll must see before it dares open a TLS connection. The
+// handshake's altcp_tls_new record buffer alone is ~16 KB (see main.c heap
+// notes); 24 KB leaves margin for the transient lwIP pbufs + request buffer.
+// If growable is below this — e.g. the previous TTS decoder (~18 KB) is still
+// resident and fragmentation has eaten the rest — we SKIP the poll this cycle
+// rather than let pico_malloc's PICO_MALLOC_PANIC turn a failed 16 KB alloc
+// into an Out-of-memory panic. The next cycle retries once the heap recovers.
+#define LP_POLL_MIN_GROWABLE_B  (24u * 1024u)
 static uint32_t g_core1_lp_last_poll_ms = 0;
 // Operator id of the current linephone session — pinned into GET URL so the
 // server can scope queries (and the POST already carries device_id).
@@ -355,11 +408,25 @@ static void on_core1_running(void) {
         && !g_core1_tl_active) {
         uint32_t now = board_millis();
         if ((now - g_core1_lp_last_poll_ms) >= LP_POLL_INTERVAL_MS) {
-            g_core1_lp_last_poll_ms = now;
-            if (lp_kick_get(g_wifi_creds.device_id, g_core1_lp_op_id) != 0) {
-                http_set_state(HC_DONE_ERR);
+            size_t growable = heap_growable();
+            if (growable < LP_POLL_MIN_GROWABLE_B) {
+                // Not enough heap to safely open a TLS connection — skip this
+                // cycle (don't bump last_poll, so we retry on the very next
+                // pass once the heap frees up). Throttled log so a sustained
+                // low-heap stretch doesn't flood the UART.
+                static uint32_t lp_skip_last = 0;
+                if ((now - lp_skip_last) >= 1000u) {
+                    lp_skip_last = now;
+                    printf("[lp/get] skip poll: heap growable=%u B < %u B\n",
+                           (unsigned)growable, (unsigned)LP_POLL_MIN_GROWABLE_B);
+                }
             } else {
-                https_busy = true;
+                g_core1_lp_last_poll_ms = now;
+                if (lp_kick_get(g_wifi_creds.device_id, g_core1_lp_op_id) != 0) {
+                    http_set_state(HC_DONE_ERR);
+                } else {
+                    https_busy = true;
+                }
             }
         }
     }
@@ -532,6 +599,17 @@ static void handle_core1_notify(ic_msg_t type, const uint8_t *payload, uint16_t 
             g_core1_lp_post_pending = true;
         }
         break;
+    case IC_MSG_LINEPHONE_DISCARD:
+        // Talk too short to post: drop the accumulated opus so it can't
+        // contaminate the next POST (or overflow g_lp_buf over repeated
+        // blips). Session stays active — only the buffer is cleared.
+        if (g_core1_lp_session_active) {
+            printf("[core1] LINEPHONE_DISCARD (accum=%u B dropped, no POST)\n",
+                   (unsigned)lp_accum_len());
+            lp_accum_reset();
+            g_core1_lp_post_pending = false;
+        }
+        break;
     case IC_MSG_LINEPHONE_START: {
         uint16_t n = length;
         if (n >= MAX_LAB_ID_LEN) n = MAX_LAB_ID_LEN - 1;
@@ -660,6 +738,15 @@ static void on_core0_audio_beep_play(void) {
     if (mic_init() != 0) {
         printf("[core0] mic_init failed — push-to-talk disabled\n");
     }
+    // HC-SR04 on pio1 (pio0=mic, pio2=cyw43+audio). Claims one SM; the trigger
+    // pulse and echo timing run on the SM, so the main loop never busy-waits.
+    hc_sr04_init(&g_sonar, SONAR_PIO, SONAR_TRIG_PIN, SONAR_ECHO_PIN);
+    // Proximity LED on a plain GPIO (active-high), off until something is near.
+    gpio_init(SONAR_LED_PIN);
+    gpio_set_dir(SONAR_LED_PIN, GPIO_OUT);
+    gpio_put(SONAR_LED_PIN, 0);
+    printf("[core0] HC-SR04 init: pio1 TRIG=GP%d ECHO=GP%d LED=GP%d (<%.0f cm)\n",
+           SONAR_TRIG_PIN, SONAR_ECHO_PIN, SONAR_LED_PIN, (double)SONAR_NEAR_CM);
     audio_play_sine();
     g_core0_beep_started_ms = board_millis();
     g_core0_state = CORE0_S_AUDIO_BEEP_WAIT;
@@ -749,6 +836,86 @@ static void on_core0_running(void) {
     }
 
     uint32_t now = board_millis();
+
+    // HC-SR04 distance: fire one ping per interval, read the prior result
+    // non-blocking (PIO does the timing — no busy-wait here). read returns
+    // false until a result is ready; <0 cm means out of range. Log ONLY on a
+    // meaningful change (out-of-range edge, or >= SONAR_LOG_DELTA_CM move) so
+    // a static scene doesn't flood the UART at 10 Hz.
+    static uint32_t sonar_last = 0;
+    static bool     sonar_near = false;      // latest proximity (<SONAR_NEAR_CM)
+    // static int   sonar_last_oor = -1;     // (was) log-throttle state
+    // static float sonar_last_cm  = -1.0f;  // (was) last logged distance
+    if ((now - sonar_last) >= SONAR_PING_INTERVAL_MS) {
+        sonar_last = now;
+        float cm;
+        if (hc_sr04_read(&g_sonar, &cm)) {
+            // --- sonar logging suppressed (uncomment to re-enable) ---
+            // if (cm < -1.5f) {           // -2.0 → ECHO stuck high
+            //     if (sonar_last_oor != 2)
+            //         printf("[sonar] ECHO STUCK HIGH — divider too high / ECHO floating / short\n");
+            //     sonar_last_oor = 2;
+            // } else if (cm < 0) {        // -1.0 → ECHO never rose
+            //     if (sonar_last_oor != 1)
+            //         printf("[sonar] NO ECHO RISE — trigger not reaching sensor / no 5V VCC / ECHO open / divider below V_IH\n");
+            //     sonar_last_oor = 1;
+            // } else {
+            //     if (sonar_last_oor != 0
+            //         || fabsf(cm - sonar_last_cm) >= SONAR_LOG_DELTA_CM) {
+            //         printf("[sonar] %.1f cm\n", cm);
+            //         sonar_last_cm = cm;
+            //     }
+            //     sonar_last_oor = 0;
+            // }
+            // Latest proximity status (drives the mic SM; the LED follows the
+            // mic ACTIVE window below, NOT raw proximity — otherwise it stays
+            // lit while the object lingers after the 3 s auto-POST).
+            // A sentinel (cm < 0 → no-rise/stuck) counts as "nothing near".
+            sonar_near = (cm >= 0.0f && cm < SONAR_NEAR_CM);
+        }
+        hc_sr04_trigger(&g_sonar);
+    }
+
+    // Sonar proximity push-to-talk (runs every loop). Proximity acts like a
+    // held Button-B via gui_button_b(): mic ON when near, forced OFF after
+    // SONAR_MIC_MAX_MS (or when the object leaves first), then a
+    // SONAR_MIC_COOLDOWN_MS lockout. It will NOT re-arm until the object has
+    // first moved away (sonar_near goes false) — one ON→OFF per approach.
+    static enum { SONAR_MIC_IDLE, SONAR_MIC_ACTIVE, SONAR_MIC_COOLDOWN }
+        sonar_mic = SONAR_MIC_IDLE;
+    static uint32_t sonar_mic_since = 0;
+    switch (sonar_mic) {
+        case SONAR_MIC_IDLE:
+            if (sonar_near) {
+                gui_button_b(true);                 // mic ON  (== Button-B press)
+                sonar_mic = SONAR_MIC_ACTIVE;
+                sonar_mic_since = now;
+            }
+            break;
+        case SONAR_MIC_ACTIVE:
+            if (!sonar_near || (now - sonar_mic_since) >= SONAR_MIC_MAX_MS) {
+                // POST only if the mic ran long enough; otherwise discard so a
+                // quick swipe doesn't upload a near-empty clip.
+                bool do_post = (now - sonar_mic_since) >= SONAR_MIC_MIN_POST_MS;
+                gui_ptt_stop(do_post);              // mic OFF (POST or DISCARD)
+                sonar_mic = SONAR_MIC_COOLDOWN;
+                sonar_mic_since = now;
+            }
+            break;
+        case SONAR_MIC_COOLDOWN:
+            // Re-arm only after the lockout AND once the object has left, so a
+            // single approach yields exactly one ON→OFF (no 3 s/1 s cycling).
+            if ((now - sonar_mic_since) >= SONAR_MIC_COOLDOWN_MS && !sonar_near)
+                sonar_mic = SONAR_MIC_IDLE;
+            break;
+    }
+
+    // Proximity LED tracks the capture window, not raw proximity: it lights
+    // when the mic is ACTIVE and goes dark the instant the mic is forced OFF
+    // by the 3 s auto-POST (or an early leave), even if the object is still
+    // within range. Re-lights only on the next approach (one ON→OFF per
+    // approach), matching the mic SM.
+    gpio_put(SONAR_LED_PIN, sonar_mic == SONAR_MIC_ACTIVE);
 
     // Re-paint the LAB list when polling state flips
     static bool last_tl_active_ui = false;
@@ -877,15 +1044,18 @@ static void handle_core0_notify(ic_msg_t type, const uint8_t *payload, uint16_t 
         // the DMA tail; on overflow audio_stream_write_mono16 just returns
         // partial, but the gate makes that path unreachable in practice.
         //
-        // pcm[] is static because core0's stack lives in SCRATCH_Y (4 KB
-        // total on RP2350). libopus's SILK WB 20 ms fixed-point decoder
-        // already consumes ~3 KB of VLAs; a stack-allocated 960 B pcm[]
-        // on top of that overflows the stack, corrupts return addresses,
-        // and silently wedges the dispatcher (audio underruns forever,
-        // no further [tts/opus] forward log lines because core1's
-        // ic_send blocks on the FIFO that core0 stops draining). Static
-        // is safe here because handle_core0_notify is the sole consumer
-        // and runs single-threaded on core0.
+        // pcm[] is static, kept off core0's stack. This was once a hard
+        // requirement: core0's stack was 4 KB (SCRATCH_Y) and libopus's SILK
+        // WB 20 ms fixed-point decoder put ~3 KB of scratch on the stack as
+        // VLAs, so a stack-allocated 960 B pcm[] overflowed it — corrupting
+        // return addresses and silently wedging the dispatcher (audio
+        // underruns forever, no further [tts/opus] forward log lines because
+        // core1's ic_send blocks on the FIFO that core0 stops draining). That
+        // hazard is gone now — core0's stack is 20 KB of SCRATCH_X-annexed RAM
+        // (memmap_bigstack.ld) and the codec scratch lives in the BSS
+        // pseudostack (src/opus_scratch.c), not stack VLAs — but static stays:
+        // it's safe because handle_core0_notify is the sole consumer and runs
+        // single-threaded on core0, and it keeps this buffer off the frame.
         static int16_t pcm[OPUS_STREAM_FRAME_SAMPLES];
         int n = opus_stream_decode_frame(payload, length,
                                          pcm, OPUS_STREAM_FRAME_SAMPLES);

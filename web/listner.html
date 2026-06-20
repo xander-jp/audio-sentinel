@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audio Sentinel Listener</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0d1117;
+    color: #c9d1d9;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #58a6ff;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.3rem;
+  }
+
+  .subtitle {
+    font-size: 0.78rem;
+    color: #6e7681;
+    margin-bottom: 2rem;
+  }
+
+  .card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 1.4rem 1.6rem;
+    width: 100%;
+    max-width: 540px;
+    margin-bottom: 1rem;
+  }
+
+  .card h2 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #8b949e;
+    margin-bottom: 1rem;
+  }
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    color: #8b949e;
+    margin-bottom: 0.3rem;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    color: #c9d1d9;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.7rem;
+    outline: none;
+    margin-bottom: 0.9rem;
+    font-family: 'Consolas', monospace;
+  }
+  input[type="text"]:focus { border-color: #58a6ff; }
+
+  .row { display: flex; gap: 0.6rem; align-items: flex-end; margin-bottom: 0.9rem; }
+  .row input[type="text"] { margin-bottom: 0; }
+
+  select {
+    width: 100%;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    color: #c9d1d9;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.7rem;
+    outline: none;
+    margin-bottom: 0.9rem;
+    display: none;
+    cursor: pointer;
+  }
+  select:focus { border-color: #58a6ff; }
+
+  button {
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+  button:disabled { opacity: 0.4; cursor: default; }
+  button:not(:disabled):hover { opacity: 0.82; }
+
+  .btn-primary   { background: #238636; color: #fff; }
+  .btn-danger    { background: #b62324; color: #fff; }
+  .btn-secondary { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
+
+  .controls { display: flex; gap: 0.6rem; }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.82rem;
+    padding: 0.5rem 0;
+  }
+
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #6e7681;
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .dot.idle    { background: #6e7681; }
+  .dot.polling { background: #f0883e; animation: pulse 1s infinite; }
+  .dot.playing { background: #3fb950; animation: pulse 0.6s infinite; }
+  .dot.error   { background: #da3633; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.35; }
+  }
+
+  #statusText { color: #c9d1d9; }
+
+  /* Audio element */
+  audio {
+    width: 100%;
+    margin-top: 0.5rem;
+    border-radius: 6px;
+  }
+
+  /* Log */
+  #log {
+    background: #0d1117;
+    border: 1px solid #21262d;
+    border-radius: 6px;
+    font-family: 'Consolas', monospace;
+    font-size: 0.75rem;
+    color: #8b949e;
+    padding: 0.7rem;
+    height: 160px;
+    overflow-y: auto;
+    white-space: pre;
+    line-height: 1.55;
+  }
+
+  .api-url {
+    font-family: 'Consolas', monospace;
+    font-size: 0.78rem;
+    color: #58a6ff;
+    word-break: break-all;
+  }
+
+  /* queue indicator */
+  #queueInfo { font-size: 0.78rem; color: #8b949e; margin-top: 0.4rem; }
+</style>
+</head>
+<body>
+
+<h1>Audio Sentinel Listener</h1>
+<p class="subtitle">Linephone polling receiver — audio/opus (16 kHz mono)</p>
+
+<!-- Config -->
+<div class="card">
+  <h2>Connection</h2>
+
+  <label>API URL</label>
+  <p class="api-url" style="margin-bottom:0.9rem" id="apiUrlDisplay"></p>
+
+  <label for="deviceId">Device ID</label>
+  <div class="row">
+    <input type="text" id="deviceId" placeholder="your-device-id" autocomplete="off" spellcheck="false">
+    <button class="btn-secondary" onclick="loadOperators()" style="margin-bottom:0">Load Operators</button>
+  </div>
+
+  <label for="operatorSel">Operator (select after loading)</label>
+  <select id="operatorSel" onchange="selectOperator()">
+    <option value="">-- select --</option>
+  </select>
+
+  <label for="operatorId">Operator ID</label>
+  <input type="text" id="operatorId" placeholder="operator-id" autocomplete="off" spellcheck="false">
+
+  <div class="controls">
+    <button class="btn-primary" id="btnStart" onclick="startPolling()">Start</button>
+    <button class="btn-danger"  id="btnStop"  onclick="stopPolling()" disabled>Stop</button>
+  </div>
+</div>
+
+<!-- Status + Player -->
+<div class="card">
+  <h2>Status</h2>
+  <div class="status-bar">
+    <div class="dot idle" id="dot"></div>
+    <span id="statusText">Stopped</span>
+  </div>
+  <audio id="player" controls></audio>
+  <p id="queueInfo">Queue: 0</p>
+</div>
+
+<!-- Log -->
+<div class="card">
+  <h2 style="display:flex;justify-content:space-between;align-items:center">
+    Log
+    <button class="btn-secondary" style="font-size:0.72rem;padding:0.25rem 0.7rem" onclick="document.getElementById('log').textContent=''">Clear</button>
+  </h2>
+  <div id="log"></div>
+</div>
+
+<script>
+'use strict';
+
+// ============================================================
+// Configuration
+// ============================================================
+const API_URL = 'https://d2bbeowpg2f545.cloudfront.net';
+document.getElementById('apiUrlDisplay').textContent = API_URL;
+
+// Poll intervals (ms)
+const POLL_GOT_AUDIO_MS  = 10000; // re-poll after receiving audio
+const POLL_EMPTY_MS      = 10000; // 404 → nothing queued
+const POLL_ERROR_MS      = 10000; // network / server error
+
+// ============================================================
+// Ogg CRC-32 (polynomial 0x04c11db7, non-reflected)
+// ============================================================
+const OGG_CRC_TBL = (() => {
+  const t = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = (i << 24) >>> 0;
+    for (let j = 0; j < 8; j++) {
+      c = (c & 0x80000000) ? (((c << 1) >>> 0) ^ 0x04c11db7) >>> 0
+                           : (c << 1) >>> 0;
+    }
+    t[i] = c;
+  }
+  return t;
+})();
+
+function oggCRC(data) {
+  let crc = 0;
+  for (let i = 0; i < data.length; i++) {
+    crc = (((crc << 8) >>> 0) ^ OGG_CRC_TBL[((crc >>> 24) ^ data[i]) & 0xff]) >>> 0;
+  }
+  return crc;
+}
+
+// ============================================================
+// Ogg page builder
+// ============================================================
+// headerType: 0x02 = BOS, 0x04 = EOS, 0x00 = normal
+function buildOggPage(data, granulePos, serialNo, seqNo, headerType) {
+  // Build lacing (segment table)
+  const segs = [];
+  let rem = data.length;
+  while (rem >= 255) { segs.push(255); rem -= 255; }
+  segs.push(rem);
+
+  const hdrLen = 27 + segs.length;
+  const page   = new Uint8Array(hdrLen + data.length);
+  const dv     = new DataView(page.buffer);
+
+  // Magic "OggS"
+  page[0] = 0x4f; page[1] = 0x67; page[2] = 0x67; page[3] = 0x53;
+  page[4] = 0;              // stream structure version
+  page[5] = headerType;
+
+  // Granule position — int64 LE via BigInt
+  const g = BigInt(granulePos);
+  for (let i = 0; i < 8; i++) page[6 + i] = Number((g >> BigInt(i * 8)) & 0xffn);
+
+  dv.setUint32(14, serialNo, true); // stream serial number
+  dv.setUint32(18, seqNo,    true); // page sequence number
+  // checksum bytes 22-25 stay 0 for now
+  page[26] = segs.length;
+  for (let i = 0; i < segs.length; i++) page[27 + i] = segs[i];
+  page.set(data, hdrLen);
+
+  // Compute CRC over the whole page (checksum field = 0)
+  const crc = oggCRC(page);
+  dv.setUint32(22, crc, true);
+  return page;
+}
+
+// ============================================================
+// OpusHead + OpusTags
+// ============================================================
+function buildOpusHead(channels, inputSampleRate, preSkip) {
+  // Fixed 19-byte header per RFC 7845 §5.1
+  const b  = new Uint8Array(19);
+  const dv = new DataView(b.buffer);
+  // "OpusHead"
+  [0x4f,0x70,0x75,0x73,0x48,0x65,0x61,0x64].forEach((v,i) => b[i] = v);
+  b[8] = 1;                              // version
+  b[9] = channels;
+  dv.setUint16(10, preSkip,        true); // pre-skip
+  dv.setUint32(12, inputSampleRate,true); // original input sample rate (informational)
+  dv.setInt16 (16, 0,              true); // output gain = 0
+  b[18] = 0;                             // channel mapping family 0 = RTP mapping
+  return b;
+}
+
+function buildOpusTags() {
+  // Minimal comment header: "OpusTags" + vendor_len=0 + user_comment_count=0
+  const b = new Uint8Array(16);
+  [0x4f,0x70,0x75,0x73,0x54,0x61,0x67,0x73].forEach((v,i) => b[i] = v);
+  // remaining 8 bytes stay 0 (two LE32 zeros)
+  return b;
+}
+
+// ============================================================
+// Parse device's [u16 BE length][opus bytes] stream
+// ============================================================
+function parseOpusPackets(buffer) {
+  const dv      = new DataView(buffer);
+  const packets = [];
+  let off       = 0;
+  while (off + 2 <= buffer.byteLength) {
+    const len = dv.getUint16(off, false); // big-endian
+    off += 2;
+    if (len === 0) continue;              // silence / sync marker — skip
+    if (off + len > buffer.byteLength) break;
+    packets.push(new Uint8Array(buffer, off, len));
+    off += len;
+  }
+  return packets;
+}
+
+// ============================================================
+// Assemble Ogg Opus container from raw Opus packets
+//
+// Ogg Opus granule positions are always in 48 kHz units (RFC 7845 §3.1)
+// regardless of the encoder's input sample rate.
+// A 20 ms Opus frame → 960 samples @ 48 kHz.
+// ============================================================
+function buildOggOpus(packets, inputSampleRate) {
+  const CHANNELS        = 1;
+  const PRE_SKIP        = 312;
+  const GRANULE_PER_PKT = 960; // 20 ms @ 48 kHz
+
+  const serialNo = (Math.random() * 0x7fffffff) | 0;
+  const pages    = [];
+
+  pages.push(buildOggPage(buildOpusHead(CHANNELS, inputSampleRate, PRE_SKIP),
+                          0, serialNo, 0, 0x02)); // BOS
+  pages.push(buildOggPage(buildOpusTags(),
+                          0, serialNo, 1, 0x00)); // comment
+
+  let granule = PRE_SKIP + GRANULE_PER_PKT;
+  for (let i = 0; i < packets.length; i++) {
+    const isLast = (i === packets.length - 1);
+    pages.push(buildOggPage(packets[i],
+                            granule, serialNo, i + 2,
+                            isLast ? 0x04 : 0x00)); // EOS on last page
+    granule += GRANULE_PER_PKT;
+  }
+
+  const total = pages.reduce((s, p) => s + p.length, 0);
+  const out   = new Uint8Array(total);
+  let   off   = 0;
+  for (const p of pages) { out.set(p, off); off += p.length; }
+  return out;
+}
+
+// ============================================================
+// Audio queue
+// ============================================================
+const player     = document.getElementById('player');
+let   audioQueue = [];
+let   isPlaying  = false;
+
+function enqueueAudio(oggBytes) {
+  audioQueue.push(oggBytes);
+  updateQueueDisplay();
+  if (!isPlaying) drainQueue();
+}
+
+function drainQueue() {
+  if (audioQueue.length === 0) { isPlaying = false; updateQueueDisplay(); return; }
+  isPlaying      = true;
+  const bytes    = audioQueue.shift();
+  updateQueueDisplay();
+  const blob     = new Blob([bytes], { type: 'audio/ogg; codecs=opus' });
+  const url      = URL.createObjectURL(blob);
+  player.src     = url;
+  setDot('playing');
+  player.play().catch(e => {
+    log('⚠ play(): ' + e.message + ' (check browser autoplay policy)');
+    URL.revokeObjectURL(url);
+    drainQueue();
+  });
+  player.onended = () => {
+    URL.revokeObjectURL(url);
+    drainQueue();
+    if (!isPlaying && polling) setDot('polling');
+  };
+}
+
+// ============================================================
+// Polling state
+// ============================================================
+let polling   = false;
+let cursor    = 0;
+let pollTimer = null;
+
+async function poll() {
+  if (!polling) return;
+
+  const deviceId   = document.getElementById('deviceId').value.trim();
+  const operatorId = document.getElementById('operatorId').value.trim();
+  if (!deviceId || !operatorId) {
+    log('⚠ device_id and operator_id are required');
+    stopPolling(); return;
+  }
+
+  const url = `${API_URL}/api/device/linephone/` +
+              `?device_id=${encodeURIComponent(deviceId)}` +
+              `&operator_id=${encodeURIComponent(operatorId)}` +
+              `&start=${cursor}` +
+              `&echo=1`;
+
+  try {
+    if (!isPlaying) setDot('polling');
+    setStatus(`Polling… (cursor: ${cursor})`);
+
+    const res = await fetch(url);
+
+    if (res.status === 200) {
+      // Advance cursor from server's X-Linephone-Head header
+      const head = res.headers.get('X-Linephone-Head') ||
+                   res.headers.get('x-linephone-head');
+      if (head) {
+        const next = parseInt(head, 10);
+        if (next > cursor) cursor = next;
+      }
+
+      const buffer  = await res.arrayBuffer();
+      const packets = parseOpusPackets(buffer);
+      log(`← recv ${packets.length} packets  cursor→${cursor}  (${buffer.byteLength} bytes)`);
+
+      if (packets.length > 0) {
+        // Detect sample rate from response header (fallback 16000)
+        const srHeader = res.headers.get('X-Opus-Sample-Rate') ||
+                         res.headers.get('X-Sample-Rate');
+        const sr = srHeader ? (parseInt(srHeader, 10) || 16000) : 16000;
+        const ogg = buildOggOpus(packets, sr);
+        enqueueAudio(ogg);
+      }
+
+      setStatus(`Idle (cursor: ${cursor})`);
+      if (polling) pollTimer = setTimeout(poll, POLL_GOT_AUDIO_MS);
+
+    } else if (res.status === 404) {
+      setStatus(`Idle (cursor: ${cursor})`);
+      if (polling) pollTimer = setTimeout(poll, POLL_EMPTY_MS);
+
+    } else {
+      log(`⚠ HTTP ${res.status} — retrying`);
+      setStatus(`Error HTTP ${res.status}`);
+      if (polling) pollTimer = setTimeout(poll, POLL_ERROR_MS);
+    }
+
+  } catch (e) {
+    log(`✖ fetch error: ${e.message}`);
+    setStatus('Network error');
+    setDot('error');
+    if (polling) pollTimer = setTimeout(poll, POLL_ERROR_MS);
+  }
+}
+
+// ============================================================
+// Operator list fetch  (GET /api/tunnel/info?t=simple)
+// ============================================================
+async function loadOperators() {
+  const deviceId = document.getElementById('deviceId').value.trim();
+  if (!deviceId) { log('⚠ device_id is required'); return; }
+
+  log('→ fetching /api/tunnel/info?t=simple…');
+  try {
+    const res = await fetch(`${API_URL}/api/tunnel/info?t=simple`, {
+      headers: { 'X-Device-Id': deviceId }
+    });
+    if (!res.ok) { log(`⚠ info: HTTP ${res.status}`); return; }
+    const json = await res.json();
+
+    const sel = document.getElementById('operatorSel');
+    sel.innerHTML = '<option value="">-- select --</option>';
+    (json.operators || []).forEach(op => {
+      const lab   = op.lab || {};
+      const label = (lab.lab_id && lab.lab_id.length) ? lab.lab_id
+                  : (lab.name   && lab.name.length)   ? lab.name
+                  : op.id;
+      const opt   = document.createElement('option');
+      opt.value       = op.id;
+      opt.textContent = `${label}  [${op.role || '?'}]`;
+      sel.appendChild(opt);
+    });
+    sel.style.display = 'block';
+    log(`← ${json.operators?.length ?? 0} operators loaded`);
+  } catch (e) {
+    log('✖ info error: ' + e.message);
+  }
+}
+
+function selectOperator() {
+  const sel = document.getElementById('operatorSel');
+  if (sel.value) {
+    document.getElementById('operatorId').value = sel.value;
+    log(`✓ operator_id set: ${sel.value}`);
+  }
+}
+
+// ============================================================
+// Start / Stop
+// ============================================================
+function startPolling() {
+  if (polling) return;
+  cursor   = 0;
+  polling  = true;
+  audioQueue = [];
+  isPlaying  = false;
+  document.getElementById('btnStart').disabled = true;
+  document.getElementById('btnStop') .disabled = false;
+  log('▶ polling started  cursor=0');
+  poll();
+}
+
+function stopPolling() {
+  polling = false;
+  clearTimeout(pollTimer);
+  document.getElementById('btnStart').disabled = false;
+  document.getElementById('btnStop') .disabled = true;
+  setDot('idle');
+  setStatus("Stopped");
+  log('■ polling stopped');
+}
+
+// ============================================================
+// UI helpers
+// ============================================================
+function setStatus(msg) {
+  document.getElementById('statusText').textContent = msg;
+}
+
+function setDot(state) {
+  const d = document.getElementById('dot');
+  d.className = 'dot ' + state;
+}
+
+function updateQueueDisplay() {
+  document.getElementById('queueInfo').textContent = `Queue: ${audioQueue.length}`;
+}
+
+function log(msg) {
+  const el = document.getElementById('log');
+  const t  = new Date().toLocaleTimeString('en-GB', { hour12: false });
+  el.textContent = `[${t}] ${msg}\n` + el.textContent;
+}
+
+// ============================================================
+// Init
+// ============================================================
+setStatus("Stopped");
+log('Audio Sentinel Listener ready');
+log('※ fetch will be blocked if CORS is not configured correctly.');
+</script>
+</body>
+</html>
